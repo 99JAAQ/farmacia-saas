@@ -10,7 +10,7 @@ public class Supplier : TenantEntity
     private Supplier(Guid pharmacyId) : base(pharmacyId) { }
 
     public string Name { get; private set; } = null!;
-    public string TaxId { get; private set; } = null!;
+    public Nit TaxId { get; private set; } = null!;
     public string? ContactName { get; private set; }
     public string? Phone { get; private set; }
     public string? Email { get; private set; }
@@ -27,7 +27,7 @@ public class Supplier : TenantEntity
     public void Update(string name, string taxId, string? contactName, string? phone, string? email)
     {
         Name = Guard.Required(name, "El nombre del proveedor");
-        TaxId = Guard.Required(taxId, "El NIT del proveedor");
+        TaxId = Nit.Parse(taxId);
         ContactName = Guard.Optional(contactName);
         Phone = Guard.Optional(phone);
         Email = Guard.OptionalEmail(email);

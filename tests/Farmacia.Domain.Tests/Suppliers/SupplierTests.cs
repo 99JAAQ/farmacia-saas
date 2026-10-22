@@ -11,18 +11,18 @@ public class SupplierTests
     public void Create_WithValidData_SetsProperties()
     {
         var supplier = Supplier.Create(
-            PharmacyId, "Distribuidora Andina", "800987654-1",
+            PharmacyId, "Distribuidora Andina", "800987654-4",
             contactName: "Laura Gómez", email: " pedidos@andina.com ");
 
         Assert.Equal(PharmacyId, supplier.PharmacyId);
         Assert.Equal("Distribuidora Andina", supplier.Name);
-        Assert.Equal("800987654-1", supplier.TaxId);
+        Assert.Equal("800987654-4", supplier.TaxId.Value);
         Assert.Equal("Laura Gómez", supplier.ContactName);
         Assert.Equal("pedidos@andina.com", supplier.Email);
     }
 
     [Theory]
-    [InlineData("", "800987654-1")]
+    [InlineData("", "800987654-4")]
     [InlineData("Distribuidora Andina", "")]
     public void Create_WithMissingRequiredData_Throws(string name, string taxId)
     {
@@ -33,18 +33,18 @@ public class SupplierTests
     public void Create_WithInvalidEmail_Throws()
     {
         Assert.Throws<DomainException>(() =>
-            Supplier.Create(PharmacyId, "Distribuidora Andina", "800987654-1", email: "no-es-un-correo"));
+            Supplier.Create(PharmacyId, "Distribuidora Andina", "800987654-4", email: "no-es-un-correo"));
     }
 
     [Fact]
     public void Update_ChangesData_AndValidatesLikeCreate()
     {
-        var supplier = Supplier.Create(PharmacyId, "Distribuidora Andina", "800987654-1");
+        var supplier = Supplier.Create(PharmacyId, "Distribuidora Andina", "800987654-4");
 
-        supplier.Update("Andina S.A.S.", "800987654-1", null, "3001234567", null);
+        supplier.Update("Andina S.A.S.", "800987654-4", null, "3001234567", null);
 
         Assert.Equal("Andina S.A.S.", supplier.Name);
         Assert.Equal("3001234567", supplier.Phone);
-        Assert.Throws<DomainException>(() => supplier.Update("", "800987654-1", null, null, null));
+        Assert.Throws<DomainException>(() => supplier.Update("", "800987654-4", null, null, null));
     }
 }

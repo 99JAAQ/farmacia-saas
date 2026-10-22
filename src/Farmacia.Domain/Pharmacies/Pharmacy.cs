@@ -8,7 +8,7 @@ public class Pharmacy : Entity
     private Pharmacy() { } // EF Core
 
     public string Name { get; private set; } = null!;
-    public string TaxId { get; private set; } = null!;
+    public Nit TaxId { get; private set; } = null!;
     public string? Address { get; private set; }
     public string? Phone { get; private set; }
 
@@ -22,7 +22,7 @@ public class Pharmacy : Entity
     public void Update(string name, string taxId, string? address, string? phone)
     {
         Name = Guard.Required(name, "El nombre de la farmacia");
-        TaxId = Guard.Required(taxId, "El NIT de la farmacia");
+        TaxId = Nit.Parse(taxId);
         Address = Guard.Optional(address);
         Phone = Guard.Optional(phone);
     }

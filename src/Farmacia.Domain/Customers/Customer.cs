@@ -32,7 +32,9 @@ public class Customer : TenantEntity
 
         FullName = Guard.Required(fullName, "El nombre del cliente");
         DocumentType = documentType;
-        DocumentNumber = Guard.Required(documentNumber, "El documento del cliente");
+        DocumentNumber = documentType == DocumentType.Nit
+            ? Nit.Parse(documentNumber).Value
+            : Guard.Required(documentNumber, "El documento del cliente");
         Phone = Guard.Optional(phone);
         Email = Guard.OptionalEmail(email);
     }

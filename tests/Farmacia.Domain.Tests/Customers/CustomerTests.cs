@@ -45,6 +45,16 @@ public class CustomerTests
     }
 
     [Fact]
+    public void Create_WithNitDocument_ValidatesAndNormalizesIt()
+    {
+        var customer = Customer.Create(PharmacyId, "Clínica del Sur", DocumentType.Nit, "800.197.268-4");
+
+        Assert.Equal("800197268-4", customer.DocumentNumber);
+        Assert.Throws<DomainException>(() =>
+            Customer.Create(PharmacyId, "Clínica del Sur", DocumentType.Nit, "800197268-5"));
+    }
+
+    [Fact]
     public void DocumentType_UsesDianCodes()
     {
         Assert.Equal(13, (int)DocumentType.CitizenshipCard);
