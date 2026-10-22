@@ -3,3 +3,64 @@
 GET {{Farmacia.Api_HostAddress}}/health
 
 ###
+
+# @name createProduct
+# Creates a product sold by box, blister and tablet. Expect 201 with a Location header.
+POST {{Farmacia.Api_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Acetaminofén 500 mg",
+  "baseUnitName": "Tableta",
+  "requiresPrescription": false,
+  "activeIngredient": "Acetaminofén",
+  "concentration": "500 mg",
+  "pharmaceuticalForm": "Tableta",
+  "sanitaryRegistration": "INVIMA 2020M-0012345",
+  "categoryId": null,
+  "saleUnits": [
+    { "name": "Caja x30", "conversionFactor": 30, "price": 12000, "barcode": "7702057000017" },
+    { "name": "Blíster", "conversionFactor": 10, "price": 4500, "barcode": null },
+    { "name": "Tableta", "conversionFactor": 1, "price": 500, "barcode": null }
+  ]
+}
+
+###
+
+# Reads the product just created (uses the Location header of the previous request).
+GET {{createProduct.response.headers.Location}}
+
+###
+
+# Same barcode again. Expect 409 Conflict.
+POST {{Farmacia.Api_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Otro producto",
+  "baseUnitName": "Tableta",
+  "requiresPrescription": false,
+  "saleUnits": [
+    { "name": "Caja x30", "conversionFactor": 30, "price": 12000, "barcode": "7702057000017" }
+  ]
+}
+
+###
+
+# Breaks a domain rule (conversion factor 0). Expect 400 with the domain message.
+POST {{Farmacia.Api_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Ibuprofeno 400 mg",
+  "baseUnitName": "Tableta",
+  "requiresPrescription": false,
+  "saleUnits": [
+    { "name": "Caja", "conversionFactor": 0, "price": 9000 }
+  ]
+}
+
+###
+
+# Unknown product. Expect 404.
+GET {{Farmacia.Api_HostAddress}}/api/products/00000000-0000-0000-0000-000000000001

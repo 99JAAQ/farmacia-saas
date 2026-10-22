@@ -10,4 +10,4 @@ public class ValidationException(string message) : Exception(message);
 public class NotFoundException(string message) : Exception(message);
 
 /// <summary>The request clashes with existing data, e.g. a barcode already in use (409).</summary>
-public class ConflictException(string message) : Exception(message);
+public class ConflictException(string message, Exception? innerException = null) : Exception(message, innerException);
