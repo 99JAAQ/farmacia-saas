@@ -1,0 +1,80 @@
+using Farmacia.Domain.Common;
+using Farmacia.Domain.Customers;
+using Farmacia.Domain.Inventory;
+using Farmacia.Domain.Pharmacies;
+using Farmacia.Domain.Products;
+using Farmacia.Domain.Suppliers;
+using Farmacia.Infrastructure.Persistence.Converters;
+using Microsoft.EntityFrameworkCore;
+
+namespace Farmacia.Infrastructure.Persistence;
+
+public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options) : DbContext(options)
+{
+    public DbSet<Pharmacy> Pharmacies => Set<Pharmacy>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Batch> Batches => Set<Batch>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(FarmaciaDbContext).Assembly);
+
+        foreach (var clrType in modelBuilder.Model.GetEntityTypes().Select(t => t.ClrType).ToList())
+        {
+            if (!typeof(Entity).IsAssignableFrom(clrType))
+                continue;
+
+            // Ids come from the domain (Guid v7). If EF thought they were store-generated, it would treat a new
+            // child that already has an Id (e.g. a SaleUnit) as existing and issue an UPDATE instead of an INSERT.
+            modelBuilder.Entity(clrType).Property(nameof(Entity.Id)).ValueGeneratedNever();
+
+            if (typeof(TenantEntity).IsAssignableFrom(clrType))
+            {
+                modelBuilder.Entity(clrType)
+                    .HasOne(typeof(Pharmacy))
+                    .WithMany()
+                    .HasForeignKey(nameof(TenantEntity.PharmacyId))
+                    .OnDelete(DeleteBehavior.Restrict);
+            }
+        }
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<Nit>().HaveConversion<NitConverter>().HaveMaxLength(20);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        var batches = TrackPendingMovements();
+        var result = base.SaveChanges(acceptAllChangesOnSuccess);
+        batches.ForEach(b => b.ClearPendingMovements());
+        return result;
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        var batches = TrackPendingMovements();
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        batches.ForEach(b => b.ClearPendingMovements());
+        return result;
+    }
+
+    // Batch records its kardex entries in memory; they are saved here, in the same transaction as the batch.
+    private List<Batch> TrackPendingMovements()
+    {
+        var batches = ChangeTracker.Entries<Batch>()
+            .Select(e => e.Entity)
+            .Where(b => b.PendingMovements.Count > 0)
+            .ToList();
+
+        foreach (var batch in batches)
+            StockMovements.AddRange(batch.PendingMovements);
+
+        return batches;
+    }
+}

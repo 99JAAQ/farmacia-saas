@@ -36,6 +36,12 @@ Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Applicati
 - Usuarios con ASP.NET Core Identity (vive en Infrastructure).
 - Sin `Warehouse`: la farmacia tiene un solo inventario.
 - Stock: la cantidad se guarda en `Batch` y cada cambio queda en `StockMovement` (kardex), ambos en la misma transacción. Se vende por FEFO (primero lo que vence primero).
+- `Batch` es un agregado aparte de `Product`. Sus métodos generan los `StockMovement` en `PendingMovements`, e Infrastructure los guarda en el mismo `SaveChanges`. El servicio de dominio `FefoAllocator` solo planifica de qué lotes sale una venta; quien vende aplica `Batch.Sell`.
+- Stock nunca negativo en línea. En la sincronización offline (fase 6) puede quedar negativo, y se marca como inconsistencia para revisar.
+- Base de datos local: SQL Server 2022 en Docker (`docker-compose.yml`), puerto 14330 en el host para no chocar con el SQL Server instalado en 1433. La contraseña va en `.env` (ignorado; plantilla en `.env.example`) y la cadena de conexión `ConnectionStrings:Farmacia` en user-secrets del proyecto Api.
+- EF Core con Fluent API en `Infrastructure/Persistence` (el dominio no tiene atributos). Ids con `ValueGeneratedNever`, FK a `Pharmacy` sin cascada, `Nit` guardado como texto, `RowVersion` en `Batch` para concurrencia optimista. `dotnet-ef` como herramienta local (`dotnet-tools.json`).
+- `System.Security.Cryptography.Pkcs` está fijado en Infrastructure porque la versión que trae SqlClient tiene vulnerabilidades conocidas; quitarlo cuando SqlClient la actualice.
+- Un lote se puede vender hasta su fecha de vencimiento inclusive; vencido no se vende, solo se da de baja. El dominio no usa `DateTime.Now`: recibe las fechas con la hora local de Colombia (UTC-5).
 - Venta fraccionada: el stock se guarda en la unidad base (p. ej. tableta); cada `SaleUnit` (caja, blíster, unidad) tiene su factor de conversión y su propio precio.
 
 ## Fases
@@ -48,4 +54,4 @@ Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Applicati
 7. Presentación: README, diagramas, ADRs, demo desplegada, video corto
 
 ## Estado actual
-Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Modelo de dominio acordado (ver "Decisiones tomadas"). Implementado: base del dominio (`Entity`, `TenantEntity`, `DomainException`, `Guard`) `Product` + `SaleUnit`, `Category`, `Pharmacy`, `Supplier`, `Customer`, value object `Nit`, todos con tests. Siguiente: `Batch` + `StockMovement` (entradas/salidas en unidad base, sin stock negativo, sin vender vencidos, FEFO).
+Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Modelo de dominio acordado (ver "Decisiones tomadas"). Implementado: base del dominio (`Entity`, `TenantEntity`, `DomainException`, `Guard`) `Product` + `SaleUnit`, `Category`, `Pharmacy`, `Supplier`, `Customer`, value object `Nit`, `Batch` + `StockMovement` + `FefoAllocator`, todos con tests. EF Core paso 1 hecho: `FarmaciaDbContext` y configuraciones de todas las entidades, Docker Compose de SQL Server, secretos locales. Siguiente: paso 2, migración inicial (revisarla juntos); paso 3, aplicarla y probar que un lote se guarda con su movimiento. Después, en el dominio: `Purchase`, `Sale` y caja.
