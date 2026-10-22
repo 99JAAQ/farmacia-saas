@@ -21,6 +21,10 @@ public class Product : TenantEntity
     public string? PharmaceuticalForm { get; private set; }
     public string? SanitaryRegistration { get; private set; }
     public bool RequiresPrescription { get; private set; }
+
+    // Referenced by Id only: Category is a separate aggregate.
+    public Guid? CategoryId { get; private set; }
+
     public IReadOnlyCollection<SaleUnit> SaleUnits => _saleUnits.AsReadOnly();
 
     public static Product Create(
@@ -31,10 +35,12 @@ public class Product : TenantEntity
         string? activeIngredient = null,
         string? concentration = null,
         string? pharmaceuticalForm = null,
-        string? sanitaryRegistration = null)
+        string? sanitaryRegistration = null,
+        Guid? categoryId = null)
     {
         return new Product(pharmacyId)
         {
+            CategoryId = categoryId,
             Name = Guard.Required(name, "El nombre del producto"),
             BaseUnitName = Guard.Required(baseUnitName, "La unidad base"),
             RequiresPrescription = requiresPrescription,
@@ -44,6 +50,8 @@ public class Product : TenantEntity
             SanitaryRegistration = Guard.Optional(sanitaryRegistration),
         };
     }
+
+    public void ChangeCategory(Guid? categoryId) => CategoryId = categoryId;
 
     public SaleUnit AddSaleUnit(string name, int conversionFactor, decimal price, string? barcode = null)
     {

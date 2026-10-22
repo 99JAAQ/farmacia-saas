@@ -27,6 +27,19 @@ public class ProductTests
         Assert.Empty(product.SaleUnits);
     }
 
+    [Fact]
+    public void ChangeCategory_SetsAndClearsCategory()
+    {
+        var product = CreateAcetaminophen();
+        var categoryId = Guid.CreateVersion7();
+
+        product.ChangeCategory(categoryId);
+        Assert.Equal(categoryId, product.CategoryId);
+
+        product.ChangeCategory(null);
+        Assert.Null(product.CategoryId);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

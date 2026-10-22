@@ -32,6 +32,7 @@ Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Applicati
 - Offline-first se aborda en la fase 6: la farmacia tiene cortes de energía e internet inestable, así que el POS debe poder vender sin conexión y sincronizar después. Mantener la lógica de negocio desacoplada de la base de datos para permitirlo.
 - Ids `Guid` v7 generados en el dominio (no por la base de datos): el POS offline debe poder crear registros sin conexión y sin choques de Id al sincronizar.
 - Modelo de dominio: Pharmacy (tenant), User/Role, Product, Category, SaleUnit, Batch, StockMovement, Supplier, Purchase/PurchaseItem, Customer (opcional en la venta), Sale/SaleItem/Payment, CashSession/CashMovement.
+- La farmacia está en Colombia: NIT obligatorio en farmacia y proveedores; el cliente lleva tipo de documento (`DocumentType`, con los códigos DIAN como valores del enum) pensando en la facturación electrónica.
 - Usuarios con ASP.NET Core Identity (vive en Infrastructure).
 - Sin `Warehouse`: la farmacia tiene un solo inventario.
 - Stock: la cantidad se guarda en `Batch` y cada cambio queda en `StockMovement` (kardex), ambos en la misma transacción. Se vende por FEFO (primero lo que vence primero).
@@ -47,4 +48,4 @@ Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Applicati
 7. Presentación: README, diagramas, ADRs, demo desplegada, video corto
 
 ## Estado actual
-Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Modelo de dominio acordado (ver "Decisiones tomadas"). Implementado: base del dominio (`Entity`, `TenantEntity`, `DomainException`, `Guard`) y `Product` + `SaleUnit` con tests. Siguiente: resto de entidades del dominio inicial.
+Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Modelo de dominio acordado (ver "Decisiones tomadas"). Implementado: base del dominio (`Entity`, `TenantEntity`, `DomainException`, `Guard`) `Product` + `SaleUnit`, `Category`, `Pharmacy`, `Supplier`, `Customer`, todos con tests. Siguiente: `Batch` + `StockMovement` (entradas/salidas en unidad base, sin stock negativo, sin vender vencidos, FEFO).
