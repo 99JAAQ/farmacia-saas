@@ -1,0 +1,5 @@
+@Farmacia.Api_HostAddress = http://localhost:5228
+
+GET {{Farmacia.Api_HostAddress}}/health
+
+###

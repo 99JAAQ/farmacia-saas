@@ -1,0 +1,44 @@
+# Farmacia SaaS — contexto del proyecto
+
+## Qué es
+Software de gestión para una farmacia real (inventario, POS, caja, compras, reportes), construido como SaaS multi-tenant. Es además el proyecto principal de portafolio de su autor, que está en búsqueda de empleo (meta: trabajo remoto para el exterior). Debe quedar desplegado, bien documentado y fácil de explicar en una entrevista.
+
+## Cómo quiero trabajar contigo
+- Actúa como tutor, no solo como generador de código: explica el porqué de cada decisión antes o junto al código.
+- Avanza por pasos pequeños; al terminar cada paso, dime qué verificar (build, test, endpoint) antes de seguir.
+- Cuando haya una decisión de diseño, plantéame las opciones con sus trade-offs y déjame elegir.
+- Responde en español. Los nombres de código (clases, métodos) van en inglés; los mensajes de commit van en español.
+- No hagas commits sin que te lo pida.
+
+## Stack
+- Backend: .NET 10, ASP.NET Core Web API (controllers), EF Core, SQL Server
+- Arquitectura: Clean Architecture + CQRS con MediatR
+- Frontend: React + TypeScript (Vite), en la carpeta `web/`
+- Tiempo real (fase 4): SignalR
+- Infra (fase 5): Docker, GitHub Actions, Azure
+
+## Estructura
+```
+src/Farmacia.Domain          -> entidades y reglas de negocio, sin dependencias
+src/Farmacia.Application     -> casos de uso (commands/queries), interfaces
+src/Farmacia.Infrastructure  -> EF Core, repositorios, servicios externos
+src/Farmacia.Api             -> controllers, configuración, auth
+web/                         -> frontend React
+```
+Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Application -> Domain).
+
+## Decisiones tomadas
+- Todas las entidades del negocio llevan `FarmaciaId` desde el inicio, para preparar el multi-tenant sin migraciones dolorosas después.
+- Offline-first se aborda en la fase 6: la farmacia tiene cortes de energía e internet inestable, así que el POS debe poder vender sin conexión y sincronizar después. Mantener la lógica de negocio desacoplada de la base de datos para permitirlo.
+
+## Fases
+1. Base: estructura, dominio inicial, EF Core + migraciones, auth JWT con roles (dueño, cajero, bodeguero), React con login  <- EN CURSO
+2. Núcleo: inventario con lotes y vencimientos, POS, caja
+3. Multi-tenant
+4. Tiempo real con SignalR (dashboard de ventas, alertas de stock y vencimientos)
+5. Calidad e infra: xUnit, Docker, CI/CD, despliegue en Azure
+6. Offline-first con sincronización
+7. Presentación: README, diagramas, ADRs, demo desplegada, video corto
+
+## Estado actual
+Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Siguiente: modelar las entidades del núcleo; el autor propone su lista primero y la revisamos juntos.
