@@ -28,8 +28,14 @@ web/                         -> frontend React
 Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Application -> Domain).
 
 ## Decisiones tomadas
-- Todas las entidades del negocio llevan `FarmaciaId` desde el inicio, para preparar el multi-tenant sin migraciones dolorosas después.
+- Todas las entidades del negocio llevan `FarmaciaId` (en código: `PharmacyId`) desde el inicio, para preparar el multi-tenant sin migraciones dolorosas después.
 - Offline-first se aborda en la fase 6: la farmacia tiene cortes de energía e internet inestable, así que el POS debe poder vender sin conexión y sincronizar después. Mantener la lógica de negocio desacoplada de la base de datos para permitirlo.
+- Ids `Guid` v7 generados en el dominio (no por la base de datos): el POS offline debe poder crear registros sin conexión y sin choques de Id al sincronizar.
+- Modelo de dominio: Pharmacy (tenant), User/Role, Product, Category, SaleUnit, Batch, StockMovement, Supplier, Purchase/PurchaseItem, Customer (opcional en la venta), Sale/SaleItem/Payment, CashSession/CashMovement.
+- Usuarios con ASP.NET Core Identity (vive en Infrastructure).
+- Sin `Warehouse`: la farmacia tiene un solo inventario.
+- Stock: la cantidad se guarda en `Batch` y cada cambio queda en `StockMovement` (kardex), ambos en la misma transacción. Se vende por FEFO (primero lo que vence primero).
+- Venta fraccionada: el stock se guarda en la unidad base (p. ej. tableta); cada `SaleUnit` (caja, blíster, unidad) tiene su factor de conversión y su propio precio.
 
 ## Fases
 1. Base: estructura, dominio inicial, EF Core + migraciones, auth JWT con roles (dueño, cajero, bodeguero), React con login  <- EN CURSO
@@ -41,4 +47,4 @@ Regla de dependencias: siempre hacia adentro (Api -> Infrastructure -> Applicati
 7. Presentación: README, diagramas, ADRs, demo desplegada, video corto
 
 ## Estado actual
-Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Siguiente: modelar las entidades del núcleo; el autor propone su lista primero y la revisamos juntos.
+Fase 1, paso 1 (estructura de la solución) completado: `Farmacia.slnx`, 4 proyectos con referencias, `Directory.Build.props`, `global.json`, endpoint `/health`. Modelo de dominio acordado (ver "Decisiones tomadas"). Implementado: base del dominio (`Entity`, `TenantEntity`, `DomainException`, `Guard`) y `Product` + `SaleUnit` con tests. Siguiente: resto de entidades del dominio inicial.
