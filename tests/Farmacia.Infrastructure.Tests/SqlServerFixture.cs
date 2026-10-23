@@ -19,6 +19,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
 
     public static readonly TimeSpan Colombia = TimeSpan.FromHours(-5);
 
+    public string ConnectionString => _container.GetConnectionString();
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();

@@ -1,3 +1,4 @@
+using Farmacia.Application.Abstractions.Authentication;
 using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Farmacia.Infrastructure;
 
@@ -38,6 +40,19 @@ public static class DependencyInjection
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<FarmaciaDbContext>();
+
+        // Fails at startup, not at the first login, if the signing key is missing or too short.
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .Validate(o => o.IsValid(),
+                $"Invalid '{JwtOptions.SectionName}' settings: Issuer, Audience and a base64 SigningKey of at least " +
+                $"{JwtOptions.MinimumKeyBytes} bytes are required (set the key with dotnet user-secrets).")
+            .ValidateOnStart();
+
+        // TryAdd: tests replace it with a fake clock.
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<AccessTokenIssuer>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

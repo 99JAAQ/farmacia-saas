@@ -15,6 +15,7 @@ internal sealed class ProblemDetailsExceptionHandler(IProblemDetailsService prob
         (int Status, string Title)? mapping = exception switch
         {
             DomainException or ValidationException => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "No autorizado"),
             NotFoundException => (StatusCodes.Status404NotFound, "No encontrado"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflicto"),
             _ => null,

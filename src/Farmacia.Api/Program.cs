@@ -1,3 +1,4 @@
+using Farmacia.Api.Authentication;
 using Farmacia.Api.Development;
 using Farmacia.Api.ErrorHandling;
 using Farmacia.Application;
@@ -10,8 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddJwtAuthentication();
 
-// Until JWT auth exists, ICurrentPharmacy is only available in Development:
+// Until endpoints read the tenant from the JWT (next step), ICurrentPharmacy is only available in Development:
 // in any other environment the use cases fail loudly instead of acting on a wrong tenant.
 if (builder.Environment.IsDevelopment())
 {
@@ -40,6 +42,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Order matters: first find out who the caller is, then decide what they may do.
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

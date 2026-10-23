@@ -23,6 +23,7 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

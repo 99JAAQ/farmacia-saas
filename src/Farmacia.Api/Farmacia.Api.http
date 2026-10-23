@@ -4,6 +4,35 @@ GET {{Farmacia.Api_HostAddress}}/health
 
 ###
 
+# ---------- Auth (development users, password in appsettings.Development.json) ----------
+
+# @name login
+# Expect 200: access token in the body, refresh token in an HttpOnly cookie (the client stores it automatically).
+POST {{Farmacia.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "dueno@farmacia.dev", "password": "Farmacia2026" }
+
+###
+
+# Who the access token belongs to. Expect 200 (401 without the header).
+GET {{Farmacia.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# New access token + new refresh cookie. Sending this one twice with the same old cookie revokes the session.
+POST {{Farmacia.Api_HostAddress}}/api/auth/refresh
+
+###
+
+# Ends the session: expect 204 and the cookie removed.
+POST {{Farmacia.Api_HostAddress}}/api/auth/logout
+
+###
+
+# ---------- Products ----------
+
 # @name createProduct
 # Creates a product sold by box, blister and tablet. Expect 201 with a Location header.
 POST {{Farmacia.Api_HostAddress}}/api/products
