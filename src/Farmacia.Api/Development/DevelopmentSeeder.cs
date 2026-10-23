@@ -1,20 +1,37 @@
+using Farmacia.Application.Authorization;
 using Farmacia.Domain.Common;
 using Farmacia.Domain.Pharmacies;
+using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Farmacia.Api.Development;
 
 internal static class DevelopmentSeeder
 {
-    /// <summary>Makes sure the development pharmacy exists (found by NIT) and points the current pharmacy at it.</summary>
+    private sealed record SeedUser(string Email, string FullName, string Role);
+
+    /// <summary>
+    /// Idempotent: makes sure the development pharmacy, the roles and one user per role exist,
+    /// and points the current pharmacy at that pharmacy.
+    /// </summary>
     public static async Task SeedAsync(WebApplication app)
     {
-        var name = app.Configuration["Development:PharmacyName"] ?? "Droguería de Desarrollo";
-        var nit = Nit.Parse(app.Configuration["Development:PharmacyNit"]);
-
         await using var scope = app.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
+        var services = scope.ServiceProvider;
+
+        var pharmacy = await EnsurePharmacyAsync(app.Configuration, services.GetRequiredService<FarmaciaDbContext>());
+        await EnsureRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
+        await EnsureUsersAsync(app.Configuration, services.GetRequiredService<UserManager<ApplicationUser>>(), pharmacy.Id);
+
+        app.Services.GetRequiredService<DevelopmentCurrentPharmacy>().Initialize(pharmacy.Id);
+    }
+
+    private static async Task<Pharmacy> EnsurePharmacyAsync(IConfiguration configuration, FarmaciaDbContext db)
+    {
+        var name = configuration["Development:PharmacyName"] ?? "Droguería de Desarrollo";
+        var nit = Nit.Parse(configuration["Development:PharmacyNit"]);
 
         var pharmacy = await db.Pharmacies.SingleOrDefaultAsync(p => p.TaxId == nit);
         if (pharmacy is null)
@@ -24,6 +41,47 @@ internal static class DevelopmentSeeder
             await db.SaveChangesAsync();
         }
 
-        app.Services.GetRequiredService<DevelopmentCurrentPharmacy>().Initialize(pharmacy.Id);
+        return pharmacy;
+    }
+
+    private static async Task EnsureRolesAsync(RoleManager<IdentityRole<Guid>> roleManager)
+    {
+        foreach (var role in Roles.All)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+                ThrowIfFailed(await roleManager.CreateAsync(new IdentityRole<Guid>(role) { Id = Guid.CreateVersion7() }));
+        }
+    }
+
+    private static async Task EnsureUsersAsync(IConfiguration configuration, UserManager<ApplicationUser> userManager, Guid pharmacyId)
+    {
+        var password = configuration["Development:UserPassword"]
+            ?? throw new InvalidOperationException("Development:UserPassword is missing.");
+        var users = configuration.GetSection("Development:Users").Get<SeedUser[]>() ?? [];
+
+        foreach (var seed in users)
+        {
+            if (await userManager.FindByEmailAsync(seed.Email) is not null)
+                continue;
+
+            var user = new ApplicationUser
+            {
+                UserName = seed.Email,
+                Email = seed.Email,
+                EmailConfirmed = true,
+                FullName = seed.FullName,
+                PharmacyId = pharmacyId,
+            };
+
+            ThrowIfFailed(await userManager.CreateAsync(user, password));
+            ThrowIfFailed(await userManager.AddToRoleAsync(user, seed.Role));
+        }
+    }
+
+    private static void ThrowIfFailed(IdentityResult result)
+    {
+        if (!result.Succeeded)
+            throw new InvalidOperationException(
+                "Development seeding failed: " + string.Join("; ", result.Errors.Select(e => e.Description)));
     }
 }

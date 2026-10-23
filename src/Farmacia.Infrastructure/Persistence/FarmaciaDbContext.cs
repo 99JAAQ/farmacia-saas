@@ -4,12 +4,17 @@ using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Suppliers;
+using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence.Converters;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Farmacia.Infrastructure.Persistence;
 
-public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options) : DbContext(options)
+// Identity tables live in the same context so that, e.g., a pharmacy and its owner can be created in one transaction.
+public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<Pharmacy> Pharmacies => Set<Pharmacy>();
     public DbSet<Category> Categories => Set<Category>();
@@ -21,6 +26,9 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options) : Db
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Must run first: it configures the Identity tables' keys and indexes.
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FarmaciaDbContext).Assembly);
 
         foreach (var clrType in modelBuilder.Model.GetEntityTypes().Select(t => t.ClrType).ToList())
