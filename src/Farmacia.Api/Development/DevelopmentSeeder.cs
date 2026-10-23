@@ -13,8 +13,8 @@ internal static class DevelopmentSeeder
     private sealed record SeedUser(string Email, string FullName, string Role);
 
     /// <summary>
-    /// Idempotent: makes sure the development pharmacy, the roles and one user per role exist,
-    /// and points the current pharmacy at that pharmacy.
+    /// Idempotent: makes sure the development pharmacy, the roles and one user per role exist.
+    /// Requests then act on that pharmacy because its users' tokens carry its Id.
     /// </summary>
     public static async Task SeedAsync(WebApplication app)
     {
@@ -24,8 +24,6 @@ internal static class DevelopmentSeeder
         var pharmacy = await EnsurePharmacyAsync(app.Configuration, services.GetRequiredService<FarmaciaDbContext>());
         await EnsureRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await EnsureUsersAsync(app.Configuration, services.GetRequiredService<UserManager<ApplicationUser>>(), pharmacy.Id);
-
-        app.Services.GetRequiredService<DevelopmentCurrentPharmacy>().Initialize(pharmacy.Id);
     }
 
     private static async Task<Pharmacy> EnsurePharmacyAsync(IConfiguration configuration, FarmaciaDbContext db)

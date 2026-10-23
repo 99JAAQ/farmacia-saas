@@ -31,11 +31,12 @@ POST {{Farmacia.Api_HostAddress}}/api/auth/logout
 
 ###
 
-# ---------- Products ----------
+# ---------- Products (send the login request above first: they use its access token) ----------
 
 # @name createProduct
 # Creates a product sold by box, blister and tablet. Expect 201 with a Location header.
 POST {{Farmacia.Api_HostAddress}}/api/products
+Authorization: Bearer {{login.response.body.$.accessToken}}
 Content-Type: application/json
 
 {
@@ -58,11 +59,13 @@ Content-Type: application/json
 
 # Reads the product just created (uses the Location header of the previous request).
 GET {{createProduct.response.headers.Location}}
+Authorization: Bearer {{login.response.body.$.accessToken}}
 
 ###
 
 # Same barcode again. Expect 409 Conflict.
 POST {{Farmacia.Api_HostAddress}}/api/products
+Authorization: Bearer {{login.response.body.$.accessToken}}
 Content-Type: application/json
 
 {
@@ -78,6 +81,7 @@ Content-Type: application/json
 
 # Breaks a domain rule (conversion factor 0). Expect 400 with the domain message.
 POST {{Farmacia.Api_HostAddress}}/api/products
+Authorization: Bearer {{login.response.body.$.accessToken}}
 Content-Type: application/json
 
 {
@@ -93,3 +97,4 @@ Content-Type: application/json
 
 # Unknown product. Expect 404.
 GET {{Farmacia.Api_HostAddress}}/api/products/00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{login.response.body.$.accessToken}}

@@ -2,7 +2,6 @@ using Farmacia.Api.Authentication;
 using Farmacia.Api.Development;
 using Farmacia.Api.ErrorHandling;
 using Farmacia.Application;
-using Farmacia.Application.Abstractions;
 using Farmacia.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,14 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication();
-
-// Until endpoints read the tenant from the JWT (next step), ICurrentPharmacy is only available in Development:
-// in any other environment the use cases fail loudly instead of acting on a wrong tenant.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<DevelopmentCurrentPharmacy>();
-    builder.Services.AddSingleton<ICurrentPharmacy>(sp => sp.GetRequiredService<DevelopmentCurrentPharmacy>());
-}
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
@@ -36,7 +27,7 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
     await DevelopmentSeeder.SeedAsync(app);
 }
 
@@ -47,6 +38,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();

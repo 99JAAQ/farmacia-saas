@@ -1,3 +1,4 @@
+using Farmacia.Application.Abstractions;
 using Farmacia.Application.Authorization;
 using Farmacia.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,7 +41,11 @@ internal static class JwtAuthenticationExtensions
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(Policies.Configure);
+
+        // The current pharmacy (tenant) is read from the token of each request.
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentPharmacy, HttpContextCurrentPharmacy>();
 
         return services;
     }

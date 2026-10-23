@@ -1,7 +1,9 @@
+using Farmacia.Api.Authentication;
 using Farmacia.Application.Products;
 using Farmacia.Application.Products.CreateProduct;
 using Farmacia.Application.Products.GetProductById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Farmacia.Api.Controllers;
@@ -12,10 +14,13 @@ namespace Farmacia.Api.Controllers;
 public sealed class ProductsController(ISender sender) : ControllerBase
 {
     // The command is the request body. It is safe to bind directly because it carries no PharmacyId:
-    // the tenant always comes from ICurrentPharmacy.
+    // the tenant always comes from ICurrentPharmacy (the signed token).
     [HttpPost]
+    [Authorize(Policy = Policies.ManageCatalog)]
     [ProducesResponseType<CreatedProductResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(CreateProductCommand command, CancellationToken cancellationToken)
     {
