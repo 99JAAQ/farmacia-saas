@@ -12,6 +12,12 @@ public class Pharmacy : Entity
     public string? Address { get; private set; }
     public string? Phone { get; private set; }
 
+    /// <summary>
+    /// "Responsable de IVA": the VAT paid on purchases is recovered from the VAT charged on sales, so it is not part
+    /// of the inventory cost. When false, purchase VAT is a cost. To confirm with the pharmacy's accountant.
+    /// </summary>
+    public bool IsVatResponsible { get; private set; } = true;
+
     public static Pharmacy Create(string name, string taxId, string? address = null, string? phone = null)
     {
         var pharmacy = new Pharmacy();
@@ -26,4 +32,6 @@ public class Pharmacy : Entity
         Address = Guard.Optional(address);
         Phone = Guard.Optional(phone);
     }
+
+    public void SetVatResponsibility(bool isVatResponsible) => IsVatResponsible = isVatResponsible;
 }

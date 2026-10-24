@@ -17,6 +17,17 @@ public class PharmacyTests
         Assert.Null(pharmacy.Phone);
     }
 
+    [Fact]
+    public void IsVatResponsible_ByDefault_AndCanBeChanged()
+    {
+        var pharmacy = Pharmacy.Create("Droguería La Salud", "900123456-8");
+        Assert.True(pharmacy.IsVatResponsible);
+
+        pharmacy.SetVatResponsibility(false);
+
+        Assert.False(pharmacy.IsVatResponsible);
+    }
+
     [Theory]
     [InlineData("", "900123456-8")]
     [InlineData("Droguería La Salud", " ")]
