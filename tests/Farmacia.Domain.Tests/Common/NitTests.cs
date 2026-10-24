@@ -50,6 +50,24 @@ public class NitTests
         Assert.Throws<DomainException>(() => Nit.Parse(value));
     }
 
+    [Theory]
+    [InlineData("800197268", "800197268-4")] // DIAN
+    [InlineData("890.903.938", "890903938-8")] // Bancolombia
+    [InlineData("900123455", "900123455-0")]
+    public void FromNumber_CalculatesTheVerificationDigit(string number, string expected)
+    {
+        Assert.Equal(expected, Nit.FromNumber(number).Value);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("80019726A")]
+    [InlineData("800197268-4")] // already has a digit: use Parse
+    public void FromNumber_WithInvalidInput_Throws(string number)
+    {
+        Assert.Throws<DomainException>(() => Nit.FromNumber(number));
+    }
+
     [Fact]
     public void Equality_IsByValue()
     {

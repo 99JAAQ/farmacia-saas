@@ -43,6 +43,17 @@ public sealed record Nit
         return new Nit(number, verificationDigit);
     }
 
+    /// <summary>Builds a NIT from the number alone, calculating its verification digit ("900123456" -> "900123456-8").</summary>
+    public static Nit FromNumber(string? number)
+    {
+        var digits = Guard.Required(number, "El NIT").Replace(".", "").Replace(" ", "");
+
+        if (digits.Length > Weights.Length || !digits.All(char.IsAsciiDigit))
+            throw new DomainException($"El NIT '{number}' solo puede tener números (sin el dígito de verificación).");
+
+        return new Nit(digits, CalculateVerificationDigit(digits));
+    }
+
     private static int CalculateVerificationDigit(string number)
     {
         var sum = 0;

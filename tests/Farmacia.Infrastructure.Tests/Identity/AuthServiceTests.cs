@@ -7,7 +7,6 @@ using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -26,21 +25,7 @@ public sealed class AuthServiceTests : IAsyncLifetime
     public AuthServiceTests(SqlServerFixture fixture)
     {
         _fixture = fixture;
-
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Farmacia"] = fixture.ConnectionString,
-                ["Jwt:Issuer"] = "farmacia-api",
-                ["Jwt:Audience"] = "farmacia-web",
-                ["Jwt:SigningKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
-            })
-            .Build();
-
-        var services = new ServiceCollection().AddLogging();
-        services.AddSingleton<TimeProvider>(_time);
-        services.AddInfrastructure(configuration);
-        _services = services.BuildServiceProvider();
+        _services = InfrastructureServices.Build(fixture, _time);
     }
 
     public async Task InitializeAsync()

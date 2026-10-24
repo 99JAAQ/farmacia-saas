@@ -1,8 +1,10 @@
+using Farmacia.Application.Abstractions;
 using Farmacia.Application.Abstractions.Authentication;
 using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Farmacia.Infrastructure.Persistence.Repositories;
+using Farmacia.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +27,10 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<IBatchRepository, BatchRepository>();
+        services.AddScoped<IPharmacyRepository, PharmacyRepository>();
 
         // Identity core only (users, roles, password hashing, lockout): no cookies, the API issues its own JWT.
         services.AddIdentityCore<ApplicationUser>(options =>
@@ -51,6 +57,7 @@ public static class DependencyInjection
 
         // TryAdd: tests replace it with a fake clock.
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IClock, ColombiaClock>();
         services.AddSingleton<AccessTokenIssuer>();
         services.AddScoped<IAuthService, AuthService>();
 

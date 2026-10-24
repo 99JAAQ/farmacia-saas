@@ -11,6 +11,13 @@ internal sealed class ProductRepository(FarmaciaDbContext db) : IProductReposito
             .Include(p => p.SaleUnits)
             .SingleOrDefaultAsync(p => p.PharmacyId == pharmacyId && p.Id == productId, cancellationToken);
 
+    public async Task<IReadOnlyList<Product>> GetByIdsAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken) =>
+        await db.Products
+            .Include(p => p.SaleUnits)
+            .Where(p => p.PharmacyId == pharmacyId && productIds.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<string>> GetExistingBarcodesAsync(
         Guid pharmacyId, IReadOnlyCollection<string> barcodes, CancellationToken cancellationToken) =>
         await db.Set<SaleUnit>()

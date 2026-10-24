@@ -1,3 +1,4 @@
+using Farmacia.Application.Purchases;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacia.Application;
@@ -12,6 +13,8 @@ public static class DependencyInjection
             config.LicenseKey = mediatRLicenseKey;
             config.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
         });
+
+        services.AddScoped<PurchaseReader>();
 
         return services;
     }
