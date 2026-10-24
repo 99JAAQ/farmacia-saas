@@ -12,6 +12,13 @@ public interface IProductRepository
     Task<IReadOnlyList<Product>> GetByIdsAsync(
         Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// By name or active ingredient (ignoring case and accents) or by exact barcode, alphabetically, with sale units.
+    /// Empty search: the first ones.
+    /// </summary>
+    Task<IReadOnlyList<Product>> SearchAsync(
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken);
+
     /// <summary>Returns which of the given barcodes are already used by any product of the pharmacy.</summary>
     Task<IReadOnlyList<string>> GetExistingBarcodesAsync(
         Guid pharmacyId, IReadOnlyCollection<string> barcodes, CancellationToken cancellationToken);

@@ -18,6 +18,29 @@ internal sealed class ProductRepository(FarmaciaDbContext db) : IProductReposito
             .Where(p => p.PharmacyId == pharmacyId && productIds.Contains(p.Id))
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Product>> SearchAsync(
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken)
+    {
+        var query = db.Products.Include(p => p.SaleUnits).Where(p => p.PharmacyId == pharmacyId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var barcode = search.Trim();
+            var pattern = SearchPattern.Contains(search);
+            query = query.Where(p =>
+                EF.Functions.Like(EF.Functions.Collate(p.Name, SearchPattern.Collation), pattern)
+                || (p.ActiveIngredient != null
+                    && EF.Functions.Like(EF.Functions.Collate(p.ActiveIngredient, SearchPattern.Collation), pattern))
+                || p.SaleUnits.Any(u => u.Barcode == barcode)); // a scanned box
+        }
+
+        return await query
+            .OrderBy(p => p.Name)
+            .Take(take)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<string>> GetExistingBarcodesAsync(
         Guid pharmacyId, IReadOnlyCollection<string> barcodes, CancellationToken cancellationToken) =>
         await db.Set<SaleUnit>()

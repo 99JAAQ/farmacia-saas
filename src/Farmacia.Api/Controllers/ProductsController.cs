@@ -2,6 +2,7 @@ using Farmacia.Api.Authentication;
 using Farmacia.Application.Products;
 using Farmacia.Application.Products.CreateProduct;
 using Farmacia.Application.Products.GetProductById;
+using Farmacia.Application.Products.SearchProducts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,12 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         var id = await sender.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id }, new CreatedResponse(id));
     }
+
+    /// <summary>By name or active ingredient (ignoring case and accents) or by exact barcode. Any logged-in user.</summary>
+    [HttpGet]
+    [ProducesResponseType<IReadOnlyList<ProductDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Search([FromQuery] string? search, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new SearchProductsQuery(search), cancellationToken));
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<ProductDto>(StatusCodes.Status200OK)]

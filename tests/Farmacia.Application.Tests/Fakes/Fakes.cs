@@ -1,5 +1,6 @@
 using Farmacia.Application.Abstractions;
 using Farmacia.Application.Abstractions.Persistence;
+using Farmacia.Domain.Common;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
@@ -30,6 +31,16 @@ public sealed class InMemoryProductRepository : IProductRepository
         Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Product>>(
             Items.Where(p => p.PharmacyId == pharmacyId && productIds.Contains(p.Id)).ToList());
+
+    // Plain case-insensitive "contains": accent-insensitivity depends on SQL Server and is tested in the API tests.
+    public Task<IReadOnlyList<Product>> SearchAsync(
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Product>>(Items
+            .Where(p => p.PharmacyId == pharmacyId)
+            .Where(p => string.IsNullOrWhiteSpace(search) || p.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Name)
+            .Take(take)
+            .ToList());
 
     public Task<IReadOnlyList<string>> GetExistingBarcodesAsync(
         Guid pharmacyId, IReadOnlyCollection<string> barcodes, CancellationToken cancellationToken)
@@ -90,6 +101,23 @@ public sealed class InMemorySupplierRepository : ISupplierRepository
         Guid pharmacyId, IReadOnlyCollection<Guid> supplierIds, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Supplier>>(
             Items.Where(s => s.PharmacyId == pharmacyId && supplierIds.Contains(s.Id)).ToList());
+
+    public Task<Supplier?> GetByIdAsync(Guid pharmacyId, Guid supplierId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Id == supplierId));
+
+    public Task<IReadOnlyList<Supplier>> SearchAsync(
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Supplier>>(Items
+            .Where(s => s.PharmacyId == pharmacyId)
+            .Where(s => string.IsNullOrWhiteSpace(search) || s.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(s => s.Name)
+            .Take(take)
+            .ToList());
+
+    public Task<bool> TaxIdExistsAsync(Guid pharmacyId, Nit taxId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.Any(s => s.PharmacyId == pharmacyId && s.TaxId == taxId));
+
+    public void Add(Supplier supplier) => Items.Add(supplier);
 }
 
 public sealed class InMemoryBatchRepository : IBatchRepository
