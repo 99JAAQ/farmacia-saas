@@ -1,6 +1,7 @@
 using Farmacia.Api.Authentication;
 using Farmacia.Api.Development;
 using Farmacia.Api.ErrorHandling;
+using Farmacia.Api.OpenApi;
 using Farmacia.Application;
 using Farmacia.Infrastructure;
 
@@ -16,8 +17,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddApiDocumentation();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -27,7 +27,7 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi().AllowAnonymous();
+    app.MapApiDocumentation();
     await DevelopmentSeeder.SeedAsync(app);
 }
 
