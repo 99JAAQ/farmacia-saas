@@ -98,3 +98,75 @@ Content-Type: application/json
 # Unknown product. Expect 404.
 GET {{Farmacia.Api_HostAddress}}/api/products/00000000-0000-0000-0000-000000000001
 Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# ---------- Purchases (log in above as dueno@ or bodega@; a cashier gets 403) ----------
+# Fill these with Ids from your database (the dev seeder creates "Distribuidora de Desarrollo"):
+#   SELECT Id FROM Suppliers;   SELECT Id, ProductId, Name FROM SaleUnits;
+@supplierId = 00000000-0000-0000-0000-000000000000
+@productId = 00000000-0000-0000-0000-000000000000
+@saleUnitId = 00000000-0000-0000-0000-000000000000
+
+# @name createPurchase
+# A draft. Each later action is saved at once, so a power cut loses nothing. Expect 201.
+POST {{Farmacia.Api_HostAddress}}/api/purchases
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "supplierId": "{{supplierId}}",
+  "invoiceNumber": "FE-0001",
+  "invoiceDate": "2026-10-23",
+  "paymentTerm": "Credit",
+  "dueDate": "2026-11-22"
+}
+
+###
+
+# 10 boxes x30 at 9.000, 2 bonus boxes, 3.000 line discount: 87.000 for 360 tablets. Expect 201.
+POST {{createPurchase.response.headers.Location}}/items
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "saleUnitId": "{{saleUnitId}}",
+  "quantity": 10,
+  "bonusQuantity": 2,
+  "unitCost": 9000,
+  "lineDiscount": 3000,
+  "vatRate": "Exempt",
+  "lotNumber": "LOTE-0001",
+  "expirationDate": "2027-06-30"
+}
+
+###
+
+# The draft with its totals.
+GET {{createPurchase.response.headers.Location}}
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# Drafts left half-typed (e.g. by a power cut).
+GET {{Farmacia.Api_HostAddress}}/api/purchases?status=Draft
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# Wrong printed total: expect 400 with the difference ($3.000).
+POST {{createPurchase.response.headers.Location}}/confirm
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "printedInvoiceTotal": 90000 }
+
+###
+
+# Right total: expect 200; the batch enters the inventory at 241,6667 per tablet.
+POST {{createPurchase.response.headers.Location}}/confirm
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "printedInvoiceTotal": 87000 }

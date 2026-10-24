@@ -2,7 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Farmacia.Application.Authorization;
+using Farmacia.Domain.Common;
 using Farmacia.Domain.Pharmacies;
+using Farmacia.Domain.Products;
+using Farmacia.Domain.Suppliers;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -70,6 +73,22 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             BaseAddress = new Uri("https://localhost"),
             HandleCookies = handleCookies,
         });
+
+    /// <summary>A supplier and a product sold by boxes of 30, for purchase tests. NITs are unique per call.</summary>
+    public async Task<(Guid SupplierId, Guid ProductId, Guid BoxId)> SeedCatalogAsync(Guid pharmacyId)
+    {
+        var supplier = Supplier.Create(
+            pharmacyId, "Distribuidora Andina", Nit.FromNumber(Random.Shared.Next(100_000_000, 999_999_999).ToString()).Value);
+        var product = Product.Create(pharmacyId, "Acetaminofén 500 mg", "Tableta", requiresPrescription: false);
+        var box = product.AddSaleUnit("Caja x30", 30, 12_000m);
+
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
+        db.AddRange(supplier, product);
+        await db.SaveChangesAsync();
+
+        return (supplier.Id, product.Id, box.Id);
+    }
 
     public async Task<string> CreateUserAsync(Guid pharmacyId, string role)
     {

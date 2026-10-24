@@ -11,6 +11,12 @@ public static class Policies
     /// <summary>Create and edit products, categories and suppliers.</summary>
     public const string ManageCatalog = nameof(ManageCatalog);
 
+    /// <summary>
+    /// Type in and confirm supplier invoices, and see them: they show costs, so margins stay out of the cashier's view.
+    /// To let only the owner confirm (separation of duties), split this policy.
+    /// </summary>
+    public const string ReceivePurchases = nameof(ReceivePurchases);
+
     internal static void Configure(AuthorizationOptions options)
     {
         // Every endpoint requires a valid token unless it says [AllowAnonymous]:
@@ -18,5 +24,6 @@ public static class Policies
         options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
 
         options.AddPolicy(ManageCatalog, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
+        options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
     }
 }

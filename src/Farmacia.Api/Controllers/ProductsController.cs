@@ -17,7 +17,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     // the tenant always comes from ICurrentPharmacy (the signed token).
     [HttpPost]
     [Authorize(Policy = Policies.ManageCatalog)]
-    [ProducesResponseType<CreatedProductResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<CreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -25,7 +25,7 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     public async Task<IActionResult> Create(CreateProductCommand command, CancellationToken cancellationToken)
     {
         var id = await sender.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id }, new CreatedProductResponse(id));
+        return CreatedAtAction(nameof(GetById), new { id }, new CreatedResponse(id));
     }
 
     [HttpGet("{id:guid}")]
@@ -34,5 +34,3 @@ public sealed class ProductsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ProductDto>> GetById(Guid id, CancellationToken cancellationToken) =>
         await sender.Send(new GetProductByIdQuery(id), cancellationToken);
 }
-
-public sealed record CreatedProductResponse(Guid Id);

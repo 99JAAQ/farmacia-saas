@@ -1,6 +1,7 @@
 using Farmacia.Application.Authorization;
 using Farmacia.Domain.Common;
 using Farmacia.Domain.Pharmacies;
+using Farmacia.Domain.Suppliers;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -21,9 +22,24 @@ internal static class DevelopmentSeeder
         await using var scope = app.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
 
-        var pharmacy = await EnsurePharmacyAsync(app.Configuration, services.GetRequiredService<FarmaciaDbContext>());
+        var db = services.GetRequiredService<FarmaciaDbContext>();
+        var pharmacy = await EnsurePharmacyAsync(app.Configuration, db);
         await EnsureRolesAsync(services.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
         await EnsureUsersAsync(app.Configuration, services.GetRequiredService<UserManager<ApplicationUser>>(), pharmacy.Id);
+        await EnsureSupplierAsync(app.Configuration, db, pharmacy.Id);
+    }
+
+    /// <summary>A supplier to type purchases against (there is no supplier screen yet).</summary>
+    private static async Task EnsureSupplierAsync(IConfiguration configuration, FarmaciaDbContext db, Guid pharmacyId)
+    {
+        var name = configuration["Development:SupplierName"] ?? "Distribuidora de Desarrollo";
+        var nit = Nit.Parse(configuration["Development:SupplierNit"]);
+
+        if (await db.Suppliers.AnyAsync(s => s.PharmacyId == pharmacyId && s.TaxId == nit))
+            return;
+
+        db.Suppliers.Add(Supplier.Create(pharmacyId, name, nit.Value));
+        await db.SaveChangesAsync();
     }
 
     private static async Task<Pharmacy> EnsurePharmacyAsync(IConfiguration configuration, FarmaciaDbContext db)
