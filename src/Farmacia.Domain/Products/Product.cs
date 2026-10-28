@@ -22,6 +22,9 @@ public class Product : TenantEntity
     public string? SanitaryRegistration { get; private set; }
     public bool RequiresPrescription { get; private set; }
 
+    /// <summary>VAT included in the sale prices. Most medicines are excluded (0%).</summary>
+    public VatRate VatRate { get; private set; }
+
     // Referenced by Id only: Category is a separate aggregate.
     public Guid? CategoryId { get; private set; }
 
@@ -36,10 +39,14 @@ public class Product : TenantEntity
         string? concentration = null,
         string? pharmaceuticalForm = null,
         string? sanitaryRegistration = null,
-        Guid? categoryId = null)
+        Guid? categoryId = null,
+        VatRate vatRate = VatRate.Exempt)
     {
+        EnsureValid(vatRate);
+
         return new Product(pharmacyId)
         {
+            VatRate = vatRate,
             CategoryId = categoryId,
             Name = Guard.Required(name, "El nombre del producto"),
             BaseUnitName = Guard.Required(baseUnitName, "La unidad base"),
@@ -53,6 +60,12 @@ public class Product : TenantEntity
 
     public void ChangeCategory(Guid? categoryId) => CategoryId = categoryId;
 
+    public void ChangeVatRate(VatRate vatRate)
+    {
+        EnsureValid(vatRate);
+        VatRate = vatRate;
+    }
+
     public SaleUnit AddSaleUnit(string name, int conversionFactor, decimal price, string? barcode = null)
     {
         var unit = new SaleUnit(PharmacyId, Id, name, conversionFactor, price, barcode);
@@ -65,5 +78,11 @@ public class Product : TenantEntity
 
         _saleUnits.Add(unit);
         return unit;
+    }
+
+    private static void EnsureValid(VatRate vatRate)
+    {
+        if (!Enum.IsDefined(vatRate))
+            throw new DomainException("La tarifa de IVA no es válida.");
     }
 }

@@ -28,6 +28,20 @@ public class ProductTests
     }
 
     [Fact]
+    public void VatRate_DefaultsToExempt_AndCanBeChanged_ButNotToAnUnknownRate()
+    {
+        var product = CreateAcetaminophen();
+        Assert.Equal(VatRate.Exempt, product.VatRate);
+
+        product.ChangeVatRate(VatRate.Standard);
+        Assert.Equal(VatRate.Standard, product.VatRate);
+
+        Assert.Throws<DomainException>(() => product.ChangeVatRate((VatRate)7));
+        Assert.Throws<DomainException>(() =>
+            Product.Create(PharmacyId, "Crema", "Tubo", false, vatRate: (VatRate)7));
+    }
+
+    [Fact]
     public void ChangeCategory_SetsAndClearsCategory()
     {
         var product = CreateAcetaminophen();

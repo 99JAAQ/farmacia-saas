@@ -16,4 +16,11 @@ public enum VatRate
 public static class VatRateExtensions
 {
     public static decimal AsFraction(this VatRate rate) => (int)rate / 100m;
+
+    /// <summary>
+    /// The VAT contained in an amount that already includes it (retail prices in Colombia do):
+    /// 12.000 at 19% contains 12.000 × 19 / 119 = 1.915,97.
+    /// </summary>
+    public static decimal IncludedIn(this VatRate rate, decimal amountWithVat) =>
+        Money.Round(amountWithVat * (int)rate / (100 + (int)rate));
 }

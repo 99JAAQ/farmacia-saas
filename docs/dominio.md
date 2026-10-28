@@ -17,6 +17,8 @@ Este documento explica las reglas de la farmacia tal como están en el código (
 | Bonificación | Unidades que el proveedor regala en la factura | `PurchaseItem.BonusQuantity` |
 | Turno | El período de un cajero en la caja, de la apertura al cierre | `CashSession` |
 | Base | El efectivo con que empieza un turno (para dar vueltas) | `CashSession.OpeningFloat` |
+| Venta / tiquete | Una venta completa, con sus líneas y pagos | `Sale`, `SaleItem`, `Payment` |
+| Devuelta | El cambio que se le da al cliente cuando paga en efectivo | `Payment.Change` |
 
 ## Productos y venta fraccionada
 
@@ -96,17 +98,29 @@ stateDiagram-v2
 - **El turno no suma las ventas una por una**, porque todas pelearían por la misma fila. Al cerrar, el caso de uso calcula el efectivo neto de las ventas del turno (`ICashSalesReader`). Mientras no existan las ventas, ese valor es $0.
 - **Al abrir se sugiere como base lo que se contó en el último cierre.**
 
-## Ventas (próximo paso)
+## Ventas
 
-Esto ya está acordado con la farmacia y todavía no está implementado:
+**El carrito vive en el navegador.** "Cobrar" envía la venta completa y `Sale.Register` la registra en un solo paso:
 
-- **Medios de pago:** efectivo, tarjeta, Nequi/Daviplata, transferencia y fiado. El **pago mixto** es frecuente, así que una venta tiene varios pagos. En efectivo se registra lo recibido y se calcula la devuelta.
-- **No hay descuentos en el mostrador.**
-- **Los precios incluyen el IVA.** El IVA se desglosa del precio (19 %: precio × 19/119). El producto tendrá su tarifa de IVA, 0 % por defecto.
-- **Fórmula médica:** en los productos que la requieren, el POS exigirá marcar "Fórmula revisada" y guardará quién y cuándo lo hizo.
-- **Devoluciones con reintegro de dinero:** el producto vuelve al mismo lote.
-- **Fiado** a clientes de confianza, con cuentas por cobrar y abonos.
-- **Al cliente se le entrega un tiquete simple** con consecutivo por farmacia. La factura electrónica DIAN queda para después.
+1. **Precio desde el catálogo.** El navegador solo envía el producto, la presentación y la cantidad. La línea (`SaleItem`) copia el precio, la tarifa de IVA y el factor de conversión, para que el tiquete no cambie si mañana cambia el catálogo.
+2. **Stock por FEFO.** Antes de tocar nada, se verifica que alcance el stock de **cada producto sumando todas sus líneas** (una caja x30 más 5 tabletas piden 35 tabletas de los mismos lotes). Después se descuenta lote por lote, y cada línea guarda de qué lotes salió y a qué costo (`SaleItemBatch`). Eso da el margen real de la venta. Los lotes vencidos se saltan.
+3. **Fórmula médica.** Si algún producto la requiere, el cajero debe marcar "Fórmula revisada" (una casilla por venta). Se guarda quién la marcó y cuándo, y cada línea recuerda si requería fórmula.
+4. **Pagos.** Los medios son efectivo, tarjeta, billetera (Nequi o Daviplata) y transferencia; el fiado llegará después.
+   - Tarjeta, billetera y transferencia pagan su monto exacto y no pueden superar el total.
+   - El efectivo cubre el resto: el cajero digita lo que entregó el cliente y el sistema calcula la devuelta.
+   - El pago en efectivo guarda el monto **aplicado** a la venta y lo **recibido**. Así, el efectivo de un turno es la suma de los pagos en efectivo.
+
+   Ejemplo: un total de $36.000, pagado con $20.000 en tarjeta y $20.000 en efectivo, aplica $16.000 de efectivo y da $4.000 de devuelta.
+5. **Si algo falla** (stock, fórmula o pagos), no se toca ningún lote.
+
+**Los precios incluyen el IVA**, y el IVA se desglosa: un producto al 19 % de $11.900 contiene $1.900 de IVA (11.900 × 19/119). Cada producto tiene su tarifa (`Product.VatRate`, 0 % por defecto, que es lo normal en los medicamentos). No hay descuentos en el mostrador.
+
+**Pendiente en próximos pasos:**
+- el consecutivo del tiquete por farmacia (una tabla contador, en la misma transacción de la venta);
+- el efectivo de las ventas en el cierre de caja;
+- las devoluciones con reintegro (el producto vuelve al mismo lote);
+- el fiado, con cuentas por cobrar y abonos;
+- el tiquete impreso.
 
 ## Colombia en el código
 
