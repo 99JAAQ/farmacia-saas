@@ -10,6 +10,7 @@ export function AppLayout() {
 
   const links = [
     { to: '/', label: 'Inicio', visible: true },
+    { to: '/caja', label: 'Caja', visible: can(user, 'operateCash') },
     { to: '/compras', label: 'Compras', visible: can(user, 'receivePurchases') },
     { to: '/catalogo', label: 'Catálogo', visible: can(user, 'manageCatalog') },
   ].filter((link) => link.visible)

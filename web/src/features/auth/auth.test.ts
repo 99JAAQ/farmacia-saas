@@ -30,6 +30,12 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('Cashier'), 'receivePurchases')).toBe(false)
   })
 
+  it('lets the owner and the cashier operate the register, but not the stock keeper', () => {
+    expect(can(userWith('Owner'), 'operateCash')).toBe(true)
+    expect(can(userWith('Cashier'), 'operateCash')).toBe(true)
+    expect(can(userWith('StockKeeper'), 'operateCash')).toBe(false)
+  })
+
   it('does not let the cashier or an anonymous visitor manage the catalog', () => {
     expect(can(userWith('Cashier'), 'manageCatalog')).toBe(false)
     expect(can(null, 'manageCatalog')).toBe(false)

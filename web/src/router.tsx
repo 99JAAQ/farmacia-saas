@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
+import { CashPage } from '@/features/cash/CashPage'
 import { NewPurchasePage } from '@/features/purchases/NewPurchasePage'
 import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
@@ -22,6 +23,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole policy="manageCatalog" />,
             children: [{ path: 'catalogo', element: <CatalogPage /> }],
+          },
+          {
+            element: <RequireRole policy="operateCash" />,
+            children: [{ path: 'caja', element: <CashPage /> }],
           },
           {
             element: <RequireRole policy="receivePurchases" />,

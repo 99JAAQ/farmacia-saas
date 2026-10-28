@@ -16,6 +16,13 @@ export function formatDate(isoDate: string): string {
   return `${day}/${month}/${year}`
 }
 
+const time = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', hour: 'numeric', minute: '2-digit' })
+
+/** "7:05 a. m." in Colombian time, whatever time zone the computer has: the pharmacy is in Colombia. */
+export function formatTime(timestamp: string): string {
+  return time.format(new Date(timestamp))
+}
+
 /**
  * Today as "YYYY-MM-DD" in the computer's local time (Colombia).
  * Not toISOString(): that is UTC, so after 7 p.m. in Colombia it would already say tomorrow.
