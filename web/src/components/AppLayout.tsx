@@ -10,6 +10,7 @@ export function AppLayout() {
 
   const links = [
     { to: '/', label: 'Inicio', visible: true },
+    { to: '/compras', label: 'Compras', visible: can(user, 'receivePurchases') },
     { to: '/catalogo', label: 'Catálogo', visible: can(user, 'manageCatalog') },
   ].filter((link) => link.visible)
 
@@ -23,7 +24,7 @@ export function AppLayout() {
               <NavLink
                 key={link.to}
                 to={link.to}
-                end
+                end={link.to === '/'} // "Compras" stays highlighted on /compras/nueva too
                 className={({ isActive }) =>
                   cn('rounded-md px-3 py-1.5 text-sm hover:bg-muted', isActive && 'bg-muted font-medium')
                 }

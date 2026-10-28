@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -20,5 +21,9 @@ export default defineConfig({
       '/api': apiUrl,
       '/health': apiUrl,
     },
+  },
+  test: {
+    // Same time zone on every machine (CI runs in UTC): date tests must fail if code mixes up local and UTC.
+    env: { TZ: 'America/Bogota' },
   },
 })

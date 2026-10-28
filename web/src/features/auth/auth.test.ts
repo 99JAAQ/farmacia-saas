@@ -24,6 +24,12 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('StockKeeper'), 'manageCatalog')).toBe(true)
   })
 
+  it('lets only the owner and the stock keeper receive purchases (they show costs)', () => {
+    expect(can(userWith('Owner'), 'receivePurchases')).toBe(true)
+    expect(can(userWith('StockKeeper'), 'receivePurchases')).toBe(true)
+    expect(can(userWith('Cashier'), 'receivePurchases')).toBe(false)
+  })
+
   it('does not let the cashier or an anonymous visitor manage the catalog', () => {
     expect(can(userWith('Cashier'), 'manageCatalog')).toBe(false)
     expect(can(null, 'manageCatalog')).toBe(false)
