@@ -46,6 +46,7 @@ internal static class JwtAuthenticationExtensions
         // The current pharmacy (tenant) is read from the token of each request.
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentPharmacy, HttpContextCurrentPharmacy>();
+        services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
 
         return services;
     }

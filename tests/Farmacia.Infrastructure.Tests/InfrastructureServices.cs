@@ -9,7 +9,10 @@ namespace Farmacia.Infrastructure.Tests;
 /// <summary>The real Application + Infrastructure services, wired to the test container.</summary>
 internal static class InfrastructureServices
 {
-    public static ServiceProvider Build(SqlServerFixture fixture, TimeProvider? time = null)
+    /// <param name="pharmacyId">Defaults to the fixture's shared pharmacy.</param>
+    /// <param name="currentUser">The user making the requests, for the use cases that need one.</param>
+    public static ServiceProvider Build(
+        SqlServerFixture fixture, TimeProvider? time = null, Guid? pharmacyId = null, ICurrentUser? currentUser = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -27,7 +30,9 @@ internal static class InfrastructureServices
 
         services.AddApplication(mediatRLicenseKey: null);
         services.AddInfrastructure(configuration);
-        services.AddSingleton<ICurrentPharmacy>(new FixedPharmacy(fixture.PharmacyId));
+        services.AddSingleton<ICurrentPharmacy>(new FixedPharmacy(pharmacyId ?? fixture.PharmacyId));
+        if (currentUser is not null)
+            services.AddSingleton(currentUser);
 
         return services.BuildServiceProvider();
     }

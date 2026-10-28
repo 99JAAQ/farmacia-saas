@@ -1,5 +1,6 @@
 using Farmacia.Application.Abstractions;
 using Farmacia.Application.Abstractions.Persistence;
+using Farmacia.Domain.Cash;
 using Farmacia.Domain.Common;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
@@ -144,4 +145,50 @@ public sealed class FakeUnitOfWork : IUnitOfWork
         SaveCount++;
         return Task.FromResult(1);
     }
+}
+
+public sealed class FakeCurrentUser(Guid userId, params string[] roles) : ICurrentUser
+{
+    public Guid UserId { get; } = userId;
+
+    public bool IsInRole(string role) => roles.Contains(role);
+}
+
+public sealed class InMemoryCashSessionRepository : ICashSessionRepository
+{
+    public List<CashSession> Items { get; } = [];
+
+    public Task<CashSession?> GetByIdAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Id == cashSessionId));
+
+    public Task<CashSession?> GetOpenAsync(Guid pharmacyId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Status == CashSessionStatus.Open));
+
+    public Task<CashSession?> GetLastClosedAsync(Guid pharmacyId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items
+            .Where(s => s.PharmacyId == pharmacyId && s.Status == CashSessionStatus.Closed)
+            .OrderByDescending(s => s.ClosedAt)
+            .FirstOrDefault());
+
+    public void Add(CashSession cashSession) => Items.Add(cashSession);
+}
+
+/// <summary>The shift's net cash from sales, set by the test.</summary>
+public sealed class FakeCashSalesReader : ICashSalesReader
+{
+    public decimal NetCash { get; set; }
+
+    public Task<decimal> GetNetCashAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
+        Task.FromResult(NetCash);
+}
+
+public sealed class FakeUserReader : IUserReader
+{
+    public Dictionary<Guid, (Guid PharmacyId, string Name)> Users { get; } = [];
+
+    public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, string>>(Users
+            .Where(u => u.Value.PharmacyId == pharmacyId && userIds.Contains(u.Key))
+            .ToDictionary(u => u.Key, u => u.Value.Name));
 }

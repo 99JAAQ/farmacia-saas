@@ -1,3 +1,4 @@
+using Farmacia.Domain.Cash;
 using Farmacia.Domain.Common;
 using Farmacia.Domain.Customers;
 using Farmacia.Domain.Inventory;
@@ -25,6 +26,7 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Purchase> Purchases => Set<Purchase>();
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

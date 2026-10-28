@@ -1,5 +1,6 @@
 using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Application.Common.Exceptions;
+using Farmacia.Infrastructure.Persistence.Configurations;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,13 @@ internal sealed class UnitOfWork(FarmaciaDbContext db) : IUnitOfWork
         {
             // The use case checks first, but two simultaneous requests can both pass that check:
             // the unique index is the final guard.
-            throw new ConflictException("Ya existe un registro con esos datos (por ejemplo, un código de barras repetido).", ex);
+            throw new ConflictException(MessageFor(sql), ex);
         }
     }
+
+    // SQL Server names the violated index in the message: a specific text where the generic one would confuse.
+    private static string MessageFor(SqlException sql) =>
+        sql.Message.Contains(CashSessionConfiguration.OneOpenPerPharmacyIndex, StringComparison.Ordinal)
+            ? "Ya hay un turno de caja abierto. Debe cerrarse antes de abrir otro."
+            : "Ya existe un registro con esos datos (por ejemplo, un código de barras repetido).";
 }

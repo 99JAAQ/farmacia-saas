@@ -16,6 +16,7 @@ internal sealed class ProblemDetailsExceptionHandler(IProblemDetailsService prob
         {
             DomainException or ValidationException => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "No autorizado"),
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Acción no permitida"),
             NotFoundException => (StatusCodes.Status404NotFound, "No encontrado"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflicto"),
             _ => null,
