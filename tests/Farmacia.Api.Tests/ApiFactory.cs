@@ -90,6 +90,23 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return (supplier.Id, product.Id, box.Id);
     }
 
+    /// <summary>
+    /// A pharmacy of its own, for tests that need the register: each pharmacy has a single open shift, so tests
+    /// sharing pharmacy A would block each other.
+    /// </summary>
+    public async Task<Guid> CreatePharmacyAsync()
+    {
+        var pharmacy = Pharmacy.Create(
+            "Droguería de Caja", Nit.FromNumber(Random.Shared.Next(100_000_000, 999_999_999).ToString()).Value);
+
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
+        db.Pharmacies.Add(pharmacy);
+        await db.SaveChangesAsync();
+
+        return pharmacy.Id;
+    }
+
     public async Task<string> CreateUserAsync(Guid pharmacyId, string role)
     {
         var email = $"{role.ToLowerInvariant()}-{Guid.CreateVersion7():N}@farmacia.test";

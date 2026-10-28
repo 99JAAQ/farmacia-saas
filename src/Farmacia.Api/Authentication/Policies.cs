@@ -17,6 +17,9 @@ public static class Policies
     /// </summary>
     public const string ReceivePurchases = nameof(ReceivePurchases);
 
+    /// <summary>Open, operate and close the cash register's shifts. Who may touch which shift is a use-case rule.</summary>
+    public const string OperateCash = nameof(OperateCash);
+
     internal static void Configure(AuthorizationOptions options)
     {
         // Every endpoint requires a valid token unless it says [AllowAnonymous]:
@@ -25,5 +28,6 @@ public static class Policies
 
         options.AddPolicy(ManageCatalog, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
+        options.AddPolicy(OperateCash, policy => policy.RequireRole(Roles.Owner, Roles.Cashier));
     }
 }

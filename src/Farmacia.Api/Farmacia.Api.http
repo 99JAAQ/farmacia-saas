@@ -170,3 +170,44 @@ Authorization: Bearer {{login.response.body.$.accessToken}}
 Content-Type: application/json
 
 { "printedInvoiceTotal": 87000 }
+
+### ---------- Cash register (as the cashier) ----------
+
+# @name loginCashier
+POST {{Farmacia.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "cajero@farmacia.dev", "password": "Farmacia2026" }
+
+###
+
+# The open shift (expectedCash is null for the cashier: blind count), or null and the suggested float.
+GET {{Farmacia.Api_HostAddress}}/api/cash-sessions/current
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+
+###
+
+# @name openShift
+POST {{Farmacia.Api_HostAddress}}/api/cash-sessions
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "openingFloat": 100000 }
+
+###
+
+# A delivery paid from the drawer.
+POST {{Farmacia.Api_HostAddress}}/api/cash-sessions/current/movements
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "type": "Expense", "amount": 8000, "reason": "Domicilio" }
+
+###
+
+# Close with the cash counted by hand: the answer shows the expected cash (92.000) and the difference.
+POST {{Farmacia.Api_HostAddress}}/api/cash-sessions/{{openShift.response.body.$.id}}/close
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "countedCash": 90000, "notes": "Faltaron 2.000" }
