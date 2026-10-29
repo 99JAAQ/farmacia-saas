@@ -120,7 +120,9 @@ stateDiagram-v2
 - reserva el número del tiquete;
 - guarda en **una sola transacción** la venta, el stock de los lotes y el kardex.
 
-Si dos ventas toman a la vez las últimas unidades del mismo lote, la segunda recibe un 409 (`RowVersion` del lote). El efectivo de las ventas ya cuenta en el cierre de caja.
+Si dos ventas toman a la vez las últimas unidades del mismo lote (por ejemplo, un doble clic en "Cobrar"), la segunda recibe un 409 por el `RowVersion` del lote; si empieza cuando la primera ya terminó, recibe un 400 por falta de stock. Nunca se vende dos veces la misma unidad: un test de API lo prueba, y sin `RowVersion` ese test falla. El efectivo de las ventas ya cuenta en el cierre de caja.
+
+**Endpoints** (`/api/sales`, política `OperateCash`): `POST` cobra y responde 201 con el **tiquete completo**, no solo el id como las demás creaciones, porque el POS lo imprime enseguida; `GET {id}` devuelve un tiquete para reimprimirlo; `GET ?cashSessionId=` lista las ventas de un turno, de la más reciente a la más antigua. El tiquete no trae costos.
 
 **Pendiente en próximos pasos:**
 - las devoluciones con reintegro (el producto vuelve al mismo lote);

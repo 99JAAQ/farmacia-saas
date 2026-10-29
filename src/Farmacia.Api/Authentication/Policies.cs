@@ -17,7 +17,7 @@ public static class Policies
     /// </summary>
     public const string ReceivePurchases = nameof(ReceivePurchases);
 
-    /// <summary>Open, operate and close the cash register's shifts. Who may touch which shift is a use-case rule.</summary>
+    /// <summary>Open, operate and close the cash register's shifts, and sell. Who may touch which shift is a use-case rule.</summary>
     public const string OperateCash = nameof(OperateCash);
 
     internal static void Configure(AuthorizationOptions options)

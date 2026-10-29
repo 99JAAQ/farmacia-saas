@@ -37,4 +37,21 @@ public sealed class SaleReader(IProductRepository products, IUserReader users)
                 .Select(p => new PaymentDto(p.Method, p.Amount, p.Received, p.Change))
                 .ToList());
     }
+
+    public async Task<IReadOnlyList<SaleSummaryDto>> ToSummariesAsync(
+        Guid pharmacyId, IReadOnlyList<Sale> sales, CancellationToken cancellationToken)
+    {
+        var names = await users.GetNamesAsync(pharmacyId, sales.Select(s => s.SoldBy).Distinct().ToList(), cancellationToken);
+
+        return sales
+            .Select(s => new SaleSummaryDto(
+                s.Id,
+                s.Number,
+                s.SoldAt,
+                names.GetValueOrDefault(s.SoldBy, "Usuario desconocido"),
+                s.Total,
+                s.Items.Count,
+                s.Payments.Select(p => p.Method).Distinct().Order().ToList()))
+            .ToList();
+    }
 }

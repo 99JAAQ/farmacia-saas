@@ -13,5 +13,15 @@ internal sealed class SaleRepository(FarmaciaDbContext db) : ISaleRepository
             .AsSplitQuery() // avoids repeating the sale row once per item, batch and payment
             .SingleOrDefaultAsync(s => s.PharmacyId == pharmacyId && s.Id == saleId, cancellationToken);
 
+    public async Task<IReadOnlyList<Sale>> ListByCashSessionAsync(
+        Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
+        await db.Sales
+            .Include(s => s.Items)
+            .Include(s => s.Payments)
+            .Where(s => s.PharmacyId == pharmacyId && s.CashSessionId == cashSessionId)
+            .OrderByDescending(s => s.Number)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
     public void Add(Sale sale) => db.Sales.Add(sale);
 }

@@ -221,6 +221,13 @@ public sealed class InMemorySaleRepository : ISaleRepository
     public Task<Sale?> GetByIdAsync(Guid pharmacyId, Guid saleId, CancellationToken cancellationToken) =>
         Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Id == saleId));
 
+    public Task<IReadOnlyList<Sale>> ListByCashSessionAsync(
+        Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Sale>>(Items
+            .Where(s => s.PharmacyId == pharmacyId && s.CashSessionId == cashSessionId)
+            .OrderByDescending(s => s.Number)
+            .ToList());
+
     public void Add(Sale sale) => Items.Add(sale);
 }
 

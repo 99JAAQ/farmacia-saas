@@ -34,3 +34,14 @@ public sealed record SaleItemDto(
 /// <param name="Amount">The part of the sale paid with this method.</param>
 /// <param name="Received">Cash only: what the customer handed over.</param>
 public sealed record PaymentDto(PaymentMethod Method, decimal Amount, decimal? Received, decimal Change);
+
+/// <summary>A line of the shift's sales list.</summary>
+/// <param name="ItemCount">Lines of the ticket, not units.</param>
+public sealed record SaleSummaryDto(
+    Guid Id,
+    long Number,
+    DateTimeOffset SoldAt,
+    string SoldByName,
+    decimal Total,
+    int ItemCount,
+    IReadOnlyList<PaymentMethod> Methods);

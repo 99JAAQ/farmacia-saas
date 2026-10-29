@@ -2,6 +2,7 @@ using Farmacia.Application.Authorization;
 using Farmacia.Application.Common.Exceptions;
 using Farmacia.Application.Sales;
 using Farmacia.Application.Sales.GetSaleById;
+using Farmacia.Application.Sales.ListSales;
 using Farmacia.Application.Sales.RegisterSale;
 using Farmacia.Application.Tests.Fakes;
 using Farmacia.Domain.Cash;
@@ -129,5 +130,20 @@ public class SaleHandlersTests
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             Handler(Guid.CreateVersion7()).Handle(new GetSaleByIdQuery(ticket.Id), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task List_ReturnsTheShiftsSales_NewestFirst_WithTheirPaymentMethods()
+    {
+        var first = await SellAsync(_ana);
+        var second = await SellAsync(_ana);
+        var shiftId = _sessions.Items.Single().Id;
+
+        var list = await new ListSalesHandler(_sales, new FakeCurrentPharmacy(_pharmacyId), new SaleReader(_products, _users))
+            .Handle(new ListSalesQuery(shiftId), CancellationToken.None);
+
+        Assert.Equal([second.Number, first.Number], list.Select(s => s.Number));
+        Assert.Equal(("Ana Cajera", 12_000m, 1), (list[0].SoldByName, list[0].Total, list[0].ItemCount));
+        Assert.Equal([PaymentMethod.Cash], list[0].Methods);
     }
 }

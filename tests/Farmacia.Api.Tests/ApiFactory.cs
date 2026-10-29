@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Farmacia.Application.Authorization;
 using Farmacia.Domain.Common;
+using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Suppliers;
@@ -88,6 +89,23 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await db.SaveChangesAsync();
 
         return (supplier.Id, product.Id, box.Id);
+    }
+
+    /// <summary>A product sold by boxes of 30 at 12.000, with one batch of the given tablets, for sales tests.</summary>
+    public async Task<(Guid ProductId, Guid BoxId)> SeedProductWithStockAsync(
+        Guid pharmacyId, int tablets, bool requiresPrescription = false)
+    {
+        var product = Product.Create(pharmacyId, $"Producto {Guid.CreateVersion7():N}", "Tableta", requiresPrescription);
+        var box = product.AddSaleUnit("Caja x30", 30, 12_000m);
+        var batch = Batch.Receive(pharmacyId, product.Id, "L1", new DateOnly(2030, 12, 31), tablets, 250m,
+            new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.FromHours(-5)));
+
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
+        db.AddRange(product, batch);
+        await db.SaveChangesAsync();
+
+        return (product.Id, box.Id);
     }
 
     /// <summary>
