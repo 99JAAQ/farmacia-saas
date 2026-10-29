@@ -117,7 +117,8 @@ web/
     │   ├── products/        → api, buscador con lector de código de barras
     │   ├── suppliers/       → api, buscador y creación de proveedor
     │   ├── purchases/       → pantallas de compras
-    │   └── cash/            → pantalla de caja
+    │   ├── cash/            → pantalla de caja
+    │   └── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
     ├── lib/
     │   ├── api/http.ts      → cliente HTTP (token en memoria, refresh único)
     │   ├── format.ts        → dinero, fechas y horas en formato colombiano

@@ -8,6 +8,7 @@ import { findScannedUnit, type ProductSelection } from './scan'
 interface Props {
   id?: string
   ref?: Ref<HTMLInputElement>
+  autoFocus?: boolean
   onSelect: (selection: ProductSelection) => void
 }
 
@@ -15,7 +16,7 @@ interface Props {
  * Type to search, or scan: a USB barcode reader "types" the code in milliseconds and presses Enter.
  * Enter searches right away (without waiting for the typing pause) so a scanned box is selected at once.
  */
-export function ProductPicker({ id, ref, onSelect }: Props) {
+export function ProductPicker({ id, ref, autoFocus, onSelect }: Props) {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const term = useDebouncedValue(search.trim())
@@ -53,6 +54,7 @@ export function ProductPicker({ id, ref, onSelect }: Props) {
       <Input
         id={id}
         ref={ref}
+        autoFocus={autoFocus}
         placeholder="Escanee el código de barras o escriba el nombre…"
         value={search}
         onChange={(event) => setSearch(event.target.value)}

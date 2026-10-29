@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Product } from '@/features/products/api'
 import { addToCart, changeUnit, emptyCart, estimatedTotal, needsPrescription, removeLine, setQuantity } from './cart'
 import { cartKey, loadCart, saveCart } from './cartStorage'
-import { summarizePayment } from './payment'
+import { summarizePayment, toAmount } from './payment'
 
 const acetaminofen: Product = {
   id: 'acetaminofen',
@@ -119,6 +119,10 @@ describe('summarizePayment (the same rules as the server)', () => {
 
   it('a transfer over the total is not allowed: nobody gives change on a transfer', () => {
     expect(summarizePayment(24_000, [{ method: 'BankTransfer', amount: 30_000 }], null).problem).not.toBeNull()
+  })
+
+  it('a typed amount that is empty, negative or not a number counts as nothing', () => {
+    expect([toAmount('20000'), toAmount(' '), toAmount('-5'), toAmount('abc')]).toEqual([20_000, 0, 0, 0])
   })
 
   it('an empty cart cannot be charged', () => {

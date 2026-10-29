@@ -23,6 +23,20 @@ export function formatTime(timestamp: string): string {
   return time.format(new Date(timestamp))
 }
 
+const dateTime = new Intl.DateTimeFormat('es-CO', {
+  timeZone: 'America/Bogota',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+/** "27/10/2026, 8:05 p. m." in Colombian time: a ticket sold at 8 p.m. is still that day, not the UTC one. */
+export function formatDateTime(timestamp: string): string {
+  return dateTime.format(new Date(timestamp))
+}
+
 /**
  * Today as "YYYY-MM-DD" in the computer's local time (Colombia).
  * Not toISOString(): that is UTC, so after 7 p.m. in Colombia it would already say tomorrow.

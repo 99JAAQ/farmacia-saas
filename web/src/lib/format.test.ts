@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatDate, formatMoney, formatTime, todayLocal } from './format'
+import { formatDate, formatDateTime, formatMoney, formatTime, todayLocal } from './format'
 
 describe('format', () => {
   afterEach(() => vi.useRealTimers())
@@ -17,6 +17,11 @@ describe('format', () => {
   it('shows the time in Colombia even for a timestamp written in UTC', () => {
     // 12:05 UTC = 7:05 a. m. in Colombia. Intl may use special spaces: normalize them.
     expect(formatTime('2026-10-27T12:05:00Z').replace(/\s/g, ' ')).toBe('7:05 a. m.')
+  })
+
+  it('formatDateTime keeps the Colombian day of a sale made at night', () => {
+    // 28 Oct 01:05 UTC = 27 Oct 8:05 p.m. in Colombia
+    expect(formatDateTime('2026-10-28T01:05:00Z').replace(/\s/g, ' ')).toBe('27/10/2026, 8:05 p. m.')
   })
 
   it('todayLocal uses the local date, not the UTC one', () => {

@@ -7,6 +7,18 @@ export interface NonCashPayment {
   amount: number
 }
 
+/** A card, wallet or transfer payment as typed (text, so the field can be cleared while typing). */
+export interface NonCashRow {
+  method: NonCashMethod
+  text: string
+}
+
+/** A typed amount: empty, negative or not a number counts as nothing. */
+export function toAmount(text: string): number {
+  const amount = Number(text)
+  return text.trim() !== '' && Number.isFinite(amount) && amount > 0 ? amount : 0
+}
+
 export interface PaymentSummary {
   nonCashTotal: number
   /** What cash must cover after the other methods. */

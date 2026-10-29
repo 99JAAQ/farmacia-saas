@@ -149,3 +149,40 @@
     @apply font-sans;
     }
 }
+/*
+ * Printing a ticket (the dialog is in a portal at the end of <body>, outside #root):
+ * - the app is removed with display: none, not just hidden, so a roll printer does not feed blank paper for the
+ *   space the page would still take;
+ * - the dialog loses its centring (translate): a printed ticket starts at the paper's top-left corner;
+ * - black on white: thermal printers have no colour, and the screen may be in dark mode.
+ * Only while a ticket is open (:has), so Ctrl+P on any other page prints as usual.
+ */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+  body:has(.ticket-print) > #root,
+  body:has(.ticket-print) [data-slot='dialog-overlay'] {
+    display: none !important;
+  }
+  [data-slot='dialog-content']:has(.ticket-print) {
+    position: static !important;
+    translate: none !important;
+    transform: none !important;
+    animation: none !important;
+    width: 74mm !important;
+    max-width: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  [data-slot='dialog-content']:has(.ticket-print) > :not(.ticket-print) {
+    display: none !important;
+  }
+  .ticket-print,
+  .ticket-print * {
+    color: #000 !important;
+    border-color: #000 !important;
+  }
+}

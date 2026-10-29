@@ -62,6 +62,7 @@ Rutas actuales (`src/router.tsx`):
 |---|---|---|
 | `/login` | Pública | Inicio de sesión |
 | `/` | Autenticado | Inicio |
+| `/vender` | `operateCash` | POS: vender en el turno propio, tiquete, ventas del turno |
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
 | `/catalogo` | `manageCatalog` | Catálogo (provisional) |
@@ -89,6 +90,13 @@ Rutas actuales (`src/router.tsx`):
   - Vive en el navegador y "Cobrar" envía la venta completa. Se guarda en `localStorage` (`cartStorage.ts`) con una clave por farmacia y usuario, así sobrevive a una recarga o a un corte de luz sin que otro cajero lo herede. Un carrito de hace más de 12 horas se descarta, y si los datos guardados no se pueden leer, se empieza vacío en vez de romper la caja.
   - El total del carrito es un **estimado** (precio × cantidad, sin descuentos en el mostrador). El oficial es el del tiquete que devuelve el servidor con los precios actuales del catálogo. Nunca se envían precios.
   - `summarizePayment` repite las reglas de pago de `Sale.AddPayments` solo para avisar antes de cobrar: tarjeta, billetera y transferencia pagan un monto exacto sin superar el total; el efectivo cubre el resto y da la devuelta; si el resto es 0, no se envía efectivo.
+- **Pantalla POS (`/vender`):**
+  - Exige un turno abierto propio; si no lo hay, explica por qué y enlaza a Caja.
+  - El buscador tiene el foco al entrar y lo recupera al cerrar el tiquete (`finalFocus` del diálogo).
+  - **F2 cobra** desde cualquier parte de la página y **Esc vuelve al buscador**. Esc nunca vacía el carrito, porque es demasiado fácil de presionar por error; vaciar es un botón.
+  - Agregar tarjeta, Nequi o transferencia propone por defecto lo que falta, y "Exacto" llena el efectivo con lo justo. La casilla "Fórmula revisada" aparece solo si algún producto la requiere.
+  - Cualquier cambio en la venta borra el error anterior (por ejemplo, "stock insuficiente" después de bajar la cantidad).
+- **Tiquete impreso:** `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.
 
