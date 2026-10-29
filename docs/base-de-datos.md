@@ -211,7 +211,7 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 
 | Columna | Valores |
 |---|---|
-| `StockMovements.Type` | 1 = Compra, 2 = Venta, 3 = Ajuste por conteo, 4 = Baja por vencimiento |
+| `StockMovements.Type` | 1 = Compra, 2 = Venta, 3 = Ajuste por conteo, 4 = Baja por vencimiento, 5 = Devolución de cliente |
 | `Purchases.Status` | 1 = Borrador, 2 = Confirmada |
 | `Purchases.PaymentTerm` | 1 = Contado, 2 = Crédito |
 | `PurchaseItems.VatRate` | 0 = Excluido/exento, 5 = 5 %, 19 = 19 % (el valor es el porcentaje) |

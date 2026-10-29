@@ -124,10 +124,21 @@ Si dos ventas toman a la vez las últimas unidades del mismo lote (por ejemplo, 
 
 **Endpoints** (`/api/sales`, política `OperateCash`): `POST` cobra y responde 201 con el **tiquete completo**, no solo el id como las demás creaciones, porque el POS lo imprime enseguida; `GET {id}` devuelve un tiquete para reimprimirlo; `GET ?cashSessionId=` lista las ventas de un turno, de la más reciente a la más antigua. El tiquete no trae costos.
 
+## Devoluciones
+
+Ver [ADR 0009](adr/0009-devoluciones-como-documento-aparte.md).
+
+**`SaleReturn` es un agregado aparte, con su propio consecutivo.** La venta nunca se modifica; lo que queda por devolver de cada línea es lo vendido menos las devoluciones anteriores del mismo tiquete.
+
+`SaleReturn.Register` recibe el tiquete, sus devoluciones anteriores, el turno de quien devuelve, el motivo (obligatorio) y las líneas a devolver (`ReturnLine`: línea del tiquete, cantidad en la presentación vendida y destino):
+- **`Restock` (vuelve al inventario):** `Batch.Restock` reingresa las unidades al lote del que salieron, con un movimiento `CustomerReturn` en el kardex. Si la línea salió de varios lotes, se llena primero el que vence más tarde (el inverso de FEFO): devolver todo deja los lotes como antes de la venta. Un lote vencido no recibe unidades; hay que descartarlas.
+- **`Discard` (se descarta):** abierto, dañado o fuera de la cadena de frío. No toca el stock.
+- **El reintegro (`Refund`) es lo pagado por esas unidades**, IVA incluido, siempre en efectivo y desde el turno de quien hace la devolución.
+- Como en la venta, **primero se valida todo y después se reingresa**: una línea inválida deja todos los lotes intactos.
+
 **Pendiente en próximos pasos:**
-- las devoluciones con reintegro (el producto vuelve al mismo lote);
-- el fiado, con cuentas por cobrar y abonos;
-- el tiquete impreso.
+- los casos de uso, la persistencia y la resta de los reintegros en el cierre de caja (paso 4b);
+- el fiado, con cuentas por cobrar y abonos.
 
 ## Colombia en el código
 

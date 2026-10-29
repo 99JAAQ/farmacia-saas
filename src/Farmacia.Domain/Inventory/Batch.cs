@@ -82,6 +82,21 @@ public class Batch : TenantEntity
         return ApplyChange(StockMovementType.Sale, -quantity, soldAt, saleId, notes: null);
     }
 
+    /// <summary>
+    /// Units a customer returned go back into this batch. An expired batch does not take them back: they could not be
+    /// sold again, so the return must discard them.
+    /// </summary>
+    public StockMovement Restock(int quantity, DateTimeOffset returnedAt, Guid saleReturnId)
+    {
+        if (quantity <= 0)
+            throw new DomainException("La cantidad devuelta debe ser mayor que cero.");
+
+        if (IsExpiredOn(DateOf(returnedAt)))
+            throw new DomainException($"El lote {LotNumber} está vencido: las unidades devueltas no pueden volver al inventario.");
+
+        return ApplyChange(StockMovementType.CustomerReturn, quantity, returnedAt, saleReturnId, notes: null);
+    }
+
     public StockMovement WriteOffExpired(DateTimeOffset writtenOffAt)
     {
         if (!IsExpiredOn(DateOf(writtenOffAt)))
