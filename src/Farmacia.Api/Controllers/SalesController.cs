@@ -1,6 +1,7 @@
 using Farmacia.Api.Authentication;
 using Farmacia.Application.Sales;
 using Farmacia.Application.Sales.GetSaleById;
+using Farmacia.Application.Sales.GetSaleByNumber;
 using Farmacia.Application.Sales.ListSales;
 using Farmacia.Application.Sales.RegisterSale;
 using MediatR;
@@ -33,6 +34,13 @@ public sealed class SalesController(ISender sender) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SaleDto>> GetById(Guid id, CancellationToken cancellationToken) =>
         await sender.Send(new GetSaleByIdQuery(id), cancellationToken);
+
+    /// <summary>A ticket by the number printed on it: how a return starts at the counter.</summary>
+    [HttpGet("by-number/{number:long}")]
+    [ProducesResponseType<SaleDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SaleDto>> GetByNumber(long number, CancellationToken cancellationToken) =>
+        await sender.Send(new GetSaleByNumberQuery(number), cancellationToken);
 
     /// <summary>
     /// "Cobrar": the whole cart at once, in the current user's open shift. Answers with the whole ticket (not just

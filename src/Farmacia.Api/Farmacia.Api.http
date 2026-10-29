@@ -232,8 +232,35 @@ Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
 
 ###
 
+# A return starts with the number printed on the ticket. Each line shows returnedQuantity.
+GET {{Farmacia.Api_HostAddress}}/api/sales/by-number/{{sell.response.body.$.number}}
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+
+###
+
+# Return 1 of the 2 boxes, back into its batch ("Discard" if opened or damaged). Expect 201 with the voucher:
+# refund 12.000 in cash from this shift. Returning more than is left: 400 "solo quedan…".
+# @name saleReturn
+POST {{Farmacia.Api_HostAddress}}/api/sale-returns
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "saleId": "{{sell.response.body.$.id}}",
+  "reason": "Le formularon otro medicamento",
+  "lines": [{ "saleItemId": "{{sell.response.body.$.items[0].id}}", "quantity": 1, "disposition": "Restock" }]
+}
+
+###
+
+# The voucher again, to reprint it.
+GET {{Farmacia.Api_HostAddress}}/api/sale-returns/{{saleReturn.response.body.$.id}}
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+
+###
+
 # Close with the cash counted by hand: the answer shows the expected cash (92.000, plus 14.000 if you ran the sale
-# above) and the difference.
+# above, minus 12.000 if you ran the return) and the difference.
 POST {{Farmacia.Api_HostAddress}}/api/cash-sessions/{{openShift.response.body.$.id}}/close
 Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
 Content-Type: application/json

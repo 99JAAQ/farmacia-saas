@@ -143,6 +143,8 @@ Ver [ADR 0009](adr/0009-devoluciones-como-documento-aparte.md).
 
 El tiquete (`SaleDto`) trae por línea `ReturnedQuantity` (lo ya devuelto), y se puede buscar por su número impreso (`GetSaleByNumber`), que es como empieza una devolución en el mostrador.
 
+**Endpoints** (política `OperateCash`): `GET /api/sales/by-number/{number}` busca el tiquete (una ruta propia, porque `GET /api/sales?cashSessionId=` devuelve una lista y este un solo tiquete o 404); `POST /api/sale-returns` devuelve y responde 201 con el **comprobante completo**, igual que la venta con su tiquete; `GET /api/sale-returns/{id}` lo devuelve para reimprimirlo. El destino de cada línea viaja como texto (`"Restock"` o `"Discard"`).
+
 **Pendiente en próximos pasos:**
 - el fiado, con cuentas por cobrar y abonos.
 
