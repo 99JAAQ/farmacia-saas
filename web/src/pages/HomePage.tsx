@@ -1,30 +1,37 @@
-import { useQuery } from '@tanstack/react-query'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getCurrentUser } from '@/features/auth/api'
+import { ChevronRight } from 'lucide-react'
+import { Link } from 'react-router'
+import { sectionsFor } from '@/components/navigation'
 import { useAuth } from '@/features/auth/useAuth'
 
-/** Temporary home: greets the user and checks that the API accepts the access token. */
+/** Greeting and a shortcut to each section the user may use. The day's summary comes with the dashboard (phase 4). */
 export function HomePage() {
   const { user } = useAuth()
-  const me = useQuery({
-    queryKey: ['auth', 'me'],
-    queryFn: ({ signal }) => getCurrentUser(signal),
-  })
+  const shortcuts = sectionsFor(user).filter((section) => section.to !== '/')
 
   return (
-    <Card className="max-w-xl">
-      <CardHeader>
-        <CardTitle className="text-xl">Hola, {user?.fullName}</CardTitle>
-        <CardDescription>Las ventas, el inventario y la caja llegan en la fase 2.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm">
-          Verificación con la API (<code>/api/auth/me</code>):{' '}
-          {me.isPending && 'consultando…'}
-          {me.isError && <span className="text-destructive">{me.error.message}</span>}
-          {me.isSuccess && <span className="font-medium text-green-700">token aceptado</span>}
-        </p>
-      </CardContent>
-    </Card>
+    <div className="grid gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Hola, {user?.fullName}</h1>
+        <p className="text-muted-foreground">¿Qué vamos a hacer hoy?</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {shortcuts.map(({ to, label, description, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="group flex items-center gap-4 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <span className="grid flex-1 gap-0.5">
+              <span className="font-medium">{label}</span>
+              <span className="text-sm text-muted-foreground">{description}</span>
+            </span>
+            <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
+    </div>
   )
 }

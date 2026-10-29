@@ -118,7 +118,7 @@ function ClosingResult({ session }: { session: CashSession }) {
         className={cn(
           'rounded-md p-3 text-center font-medium',
           difference.kind === 'exact' && 'bg-muted',
-          difference.kind === 'surplus' && 'bg-amber-100 text-amber-900',
+          difference.kind === 'surplus' && 'bg-warning/10 text-warning',
           difference.kind === 'shortage' && 'bg-destructive/10 text-destructive',
         )}
       >

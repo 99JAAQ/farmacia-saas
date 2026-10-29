@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { FullScreenLoader } from '@/components/FullScreenLoader'
+import { Logo } from '@/components/Logo'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,9 +56,12 @@ export function LoginPage() {
   return (
     <main className="flex min-h-svh items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Farmacia</CardTitle>
-          <CardDescription>Ingrese con su correo y contraseña.</CardDescription>
+        <CardHeader className="gap-3">
+          <Logo />
+          <div className="grid gap-1">
+            <CardTitle className="text-xl">Ingresar</CardTitle>
+            <CardDescription>Use su correo y contraseña.</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} noValidate className="grid gap-4">

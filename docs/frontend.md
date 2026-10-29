@@ -54,7 +54,7 @@ Todas las llamadas pasan por `api<T>(url, options)`, que:
 - **`RequireAuth` es una ruta de layout:** si no hay sesión, redirige al login y recuerda la página a la que se quería ir.
 - **`RequireRole policy="…"`** muestra "No tiene permiso" si el usuario no cumple la política.
 - **Al cerrar sesión se limpia la caché de TanStack Query**, para que el siguiente usuario no vea datos del anterior.
-- **El menú (`AppLayout`) muestra solo los enlaces permitidos**, con `can(user, policy)` de `permissions.ts`.
+- **El menú (`AppLayout`) muestra solo los enlaces permitidos**, con `can(user, policy)` de `permissions.ts`. Las secciones (ruta, nombre, ícono, política) están en una sola lista, `components/navigation.ts`, que usan la barra lateral y los accesos directos del inicio.
 
 Rutas actuales (`src/router.tsx`):
 
@@ -65,6 +65,14 @@ Rutas actuales (`src/router.tsx`):
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
 | `/catalogo` | `manageCatalog` | Catálogo (provisional) |
+
+## Apariencia
+
+- **Un solo color de marca, teal, en el token `--primary`**, sobre grises con un leve tinte frío. Los tokens están en `src/index.css`, y todos los componentes de shadcn los leen, así que cambiar el color de la farmacia (por ejemplo, en la fase 3, uno por tenant) es cambiar `--primary` y sus compañeros, sin tocar componentes.
+- **Tokens propios `success` y `warning`** (además de `destructive`) para devueltas, sobrantes de caja o lotes por vencer: `text-success`, `bg-warning/10`. **No se usan colores fijos** como `text-green-700`, porque no cambian con el tema ni con el modo oscuro.
+- **Modo oscuro según el sistema operativo** (`prefers-color-scheme`), solo con CSS: sin botón ni estado que recordar, y sin parpadeo del tema equivocado al cargar. La variante `dark:` de Tailwind usa la misma media query.
+- **Logo:** `components/Logo.tsx` (cruz de farmacia sobre un cuadro del color de marca) y el mismo dibujo en `public/favicon.svg`.
+- **Layout:** barra lateral en pantallas anchas (el computador de la caja) y barra superior en pantallas angostas.
 
 ## Convenciones
 

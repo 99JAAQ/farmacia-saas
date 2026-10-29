@@ -105,9 +105,12 @@ web/
 ├── components.json          → configuración de shadcn/ui
 └── src/
     ├── main.tsx, App.tsx    → arranque: QueryClient, AuthProvider, RouterProvider
+    ├── index.css            → tema: tokens de color (teal + success/warning), modo oscuro del sistema
     ├── router.tsx           → todas las rutas y sus permisos
     ├── components/
-    │   ├── AppLayout.tsx    → encabezado y menú (según permisos)
+    │   ├── AppLayout.tsx    → barra lateral (o superior en pantallas angostas) y menú según permisos
+    │   ├── navigation.ts    → las secciones de la app: ruta, nombre, ícono y política
+    │   ├── Logo.tsx         → marca (el mismo dibujo que public/favicon.svg)
     │   └── ui/              → componentes de shadcn/ui (generados por la CLI; se editan poco)
     ├── features/            → una carpeta por funcionalidad
     │   ├── auth/            → login, sesión, RequireAuth/RequireRole, permissions.ts

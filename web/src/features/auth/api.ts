@@ -1,18 +1,9 @@
 import { api, setSession } from '@/lib/api/http'
-import type { Role, Session } from '@/lib/api/types'
+import type { Session } from '@/lib/api/types'
 
 export interface Credentials {
   email: string
   password: string
-}
-
-/** What /api/auth/me reads from the access token: proves the token is accepted by the API. */
-export interface CurrentUser {
-  userId: string
-  email: string
-  fullName: string
-  pharmacyId: string
-  roles: Role[]
 }
 
 export async function login(credentials: Credentials): Promise<Session> {
@@ -28,8 +19,4 @@ export async function logout(): Promise<void> {
     // Even if the server cannot be reached, this device forgets the session.
     setSession(null)
   }
-}
-
-export function getCurrentUser(signal?: AbortSignal): Promise<CurrentUser> {
-  return api<CurrentUser>('/api/auth/me', { signal })
 }
