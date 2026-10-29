@@ -85,6 +85,10 @@ Rutas actuales (`src/router.tsx`):
   - `formatTime` muestra la hora en `America/Bogota`, sin importar la zona horaria del computador.
 - **Formularios:** `useWatch` en vez de `watch()`, que es incompatible con React Compiler (oxlint lo marca). Así se podrá activar el compilador sin reescribir los formularios. Si la entrada y la salida del esquema zod difieren, se tipa `useForm<z.input<…>, unknown, z.output<…>>`.
 - **Lector de código de barras:** `ProductPicker` busca al escribir (desde 2 letras, con una pausa) y busca de inmediato al presionar Enter, que es lo que hace el lector después de escribir el código. `findScannedUnit` elige la presentación exacta del código escaneado.
+- **Carrito del POS (`features/sales`):**
+  - Vive en el navegador y "Cobrar" envía la venta completa. Se guarda en `localStorage` (`cartStorage.ts`) con una clave por farmacia y usuario, así sobrevive a una recarga o a un corte de luz sin que otro cajero lo herede. Un carrito de hace más de 12 horas se descarta, y si los datos guardados no se pueden leer, se empieza vacío en vez de romper la caja.
+  - El total del carrito es un **estimado** (precio × cantidad, sin descuentos en el mostrador). El oficial es el del tiquete que devuelve el servidor con los precios actuales del catálogo. Nunca se envían precios.
+  - `summarizePayment` repite las reglas de pago de `Sale.AddPayments` solo para avisar antes de cobrar: tarjeta, billetera y transferencia pagan un monto exacto sin superar el total; el efectivo cubre el resto y da la devuelta; si el resto es 0, no se envía efectivo.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.
 

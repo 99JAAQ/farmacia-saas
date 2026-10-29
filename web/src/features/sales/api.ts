@@ -1,0 +1,80 @@
+import type { VatRate } from '@/features/purchases/api'
+import { api } from '@/lib/api/http'
+
+export type PaymentMethod = 'Cash' | 'Card' | 'DigitalWallet' | 'BankTransfer'
+
+export interface SaleItem {
+  id: string
+  productId: string
+  productName: string
+  saleUnitName: string
+  quantity: number
+  unitPrice: number
+  vatRate: VatRate
+  total: number
+  /** Included in the total (prices include VAT). */
+  vat: number
+  requiresPrescription: boolean
+}
+
+export interface Payment {
+  method: PaymentMethod
+  /** The part of the sale paid with this method. */
+  amount: number
+  /** Cash only: what the customer handed over. */
+  received: number | null
+  change: number
+}
+
+/** The ticket. No costs: the cashier sees it. */
+export interface Sale {
+  id: string
+  number: number
+  soldAt: string
+  cashSessionId: string
+  soldByName: string
+  total: number
+  vat: number
+  change: number
+  prescriptionChecked: boolean
+  items: SaleItem[]
+  payments: Payment[]
+}
+
+export interface SaleSummary {
+  id: string
+  number: number
+  soldAt: string
+  soldByName: string
+  total: number
+  /** Lines of the ticket, not units. */
+  itemCount: number
+  methods: PaymentMethod[]
+}
+
+/** What "Cobrar" sends. Never prices: the server takes them from the catalog. */
+export interface RegisterSaleRequest {
+  lines: { productId: string; saleUnitId: string; quantity: number }[]
+  /** For cash, the amount the customer handed over. */
+  payments: { method: PaymentMethod; amount: number }[]
+  prescriptionChecked: boolean
+}
+
+export const saleKeys = {
+  byShift: (cashSessionId: string) => ['sales', 'shift', cashSessionId] as const,
+  detail: (id: string) => ['sales', id] as const,
+}
+
+/** Answers with the whole ticket, ready to print. */
+export function registerSale(request: RegisterSaleRequest): Promise<Sale> {
+  return api<Sale>('/api/sales', { method: 'POST', body: request })
+}
+
+export function getSale(id: string, signal?: AbortSignal): Promise<Sale> {
+  return api<Sale>(`/api/sales/${id}`, { signal })
+}
+
+/** Newest first. */
+export function listShiftSales(cashSessionId: string, signal?: AbortSignal): Promise<SaleSummary[]> {
+  return api<SaleSummary[]>(`/api/sales?cashSessionId=${encodeURIComponent(cashSessionId)}`, { signal })
+}
