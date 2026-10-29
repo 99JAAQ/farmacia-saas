@@ -1,3 +1,4 @@
+using Farmacia.Domain.Common;
 using Farmacia.Domain.Products;
 
 namespace Farmacia.Application.Products;
@@ -8,6 +9,7 @@ public sealed record ProductDto(
     string Name,
     string BaseUnitName,
     bool RequiresPrescription,
+    VatRate VatRate,
     string? ActiveIngredient,
     string? Concentration,
     string? PharmaceuticalForm,
@@ -20,6 +22,7 @@ public sealed record ProductDto(
         product.Name,
         product.BaseUnitName,
         product.RequiresPrescription,
+        product.VatRate,
         product.ActiveIngredient,
         product.Concentration,
         product.PharmaceuticalForm,

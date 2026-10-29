@@ -115,9 +115,14 @@ stateDiagram-v2
 
 **Los precios incluyen el IVA**, y el IVA se desglosa: un producto al 19 % de $11.900 contiene $1.900 de IVA (11.900 × 19/119). Cada producto tiene su tarifa (`Product.VatRate`, 0 % por defecto, que es lo normal en los medicamentos). No hay descuentos en el mostrador.
 
+**El caso de uso `RegisterSale`:**
+- exige que el turno abierto sea de quien vende;
+- reserva el número del tiquete;
+- guarda en **una sola transacción** la venta, el stock de los lotes y el kardex.
+
+Si dos ventas toman a la vez las últimas unidades del mismo lote, la segunda recibe un 409 (`RowVersion` del lote). El efectivo de las ventas ya cuenta en el cierre de caja.
+
 **Pendiente en próximos pasos:**
-- el consecutivo del tiquete por farmacia (una tabla contador, en la misma transacción de la venta);
-- el efectivo de las ventas en el cierre de caja;
 - las devoluciones con reintegro (el producto vuelve al mismo lote);
 - el fiado, con cuentas por cobrar y abonos;
 - el tiquete impreso.

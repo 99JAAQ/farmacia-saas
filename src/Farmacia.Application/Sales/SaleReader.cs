@@ -1,0 +1,40 @@
+using Farmacia.Application.Abstractions.Persistence;
+using Farmacia.Domain.Sales;
+
+namespace Farmacia.Application.Sales;
+
+/// <summary>Builds the ticket DTO with product, sale unit and cashier names (they live in other aggregates).</summary>
+public sealed class SaleReader(IProductRepository products, IUserReader users)
+{
+    public async Task<SaleDto> ToDtoAsync(Sale sale, CancellationToken cancellationToken)
+    {
+        var productIds = sale.Items.Select(i => i.ProductId).Distinct().ToList();
+        var catalog = (await products.GetByIdsAsync(sale.PharmacyId, productIds, cancellationToken)).ToDictionary(p => p.Id);
+        var names = await users.GetNamesAsync(sale.PharmacyId, [sale.SoldBy], cancellationToken);
+
+        return new SaleDto(
+            sale.Id,
+            sale.Number,
+            sale.SoldAt,
+            sale.CashSessionId,
+            names.GetValueOrDefault(sale.SoldBy, "Usuario desconocido"),
+            sale.Total,
+            sale.Vat,
+            sale.Change,
+            PrescriptionChecked: sale.PrescriptionCheckedBy is not null,
+            sale.Items
+                .Select(item =>
+                {
+                    var product = catalog.GetValueOrDefault(item.ProductId);
+                    var unit = product?.SaleUnits.SingleOrDefault(u => u.Id == item.SaleUnitId);
+                    return new SaleItemDto(
+                        item.Id, item.ProductId, product?.Name ?? "Producto desconocido", unit?.Name ?? "",
+                        item.Quantity, item.UnitPrice, item.VatRate, item.Total, item.Vat, item.RequiresPrescription);
+                })
+                .ToList(),
+            sale.Payments
+                .OrderBy(p => p.Method)
+                .Select(p => new PaymentDto(p.Method, p.Amount, p.Received, p.Change))
+                .ToList());
+    }
+}

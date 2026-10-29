@@ -5,6 +5,7 @@ using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Purchases;
+using Farmacia.Domain.Sales;
 using Farmacia.Domain.Suppliers;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence.Converters;
@@ -27,6 +28,8 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SaleCounter> SaleCounters => Set<SaleCounter>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

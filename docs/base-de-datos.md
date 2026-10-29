@@ -20,6 +20,12 @@ erDiagram
     AspNetUsers ||--o{ RefreshTokens : "sesiones"
     AspNetUsers ||--o{ CashSessions : "abre / cierra"
     CashSessions ||--o{ CashMovements : "movimientos"
+    CashSessions ||--o{ Sales : "ventas del turno"
+    Sales ||--|{ SaleItems : "líneas"
+    Sales ||--|{ Payments : "pagos"
+    SaleItems ||--|{ SaleItemBatches : "salió de"
+    Batches ||--o{ SaleItemBatches : ""
+    Pharmacies ||--o| SaleCounters : "último tiquete"
 
     Pharmacies {
         guid Id PK
@@ -44,6 +50,7 @@ erDiagram
         string ActiveIngredient
         string BaseUnitName "p. ej. Tableta"
         bool RequiresPrescription
+        int VatRate "0, 5 o 19 (IVA incluido en el precio)"
     }
     SaleUnits {
         guid Id PK
@@ -121,6 +128,43 @@ erDiagram
         decimal CountedCash "al cerrar"
         rowversion RowVersion
     }
+    Sales {
+        guid Id PK
+        bigint Number UK "tiquete, único por farmacia"
+        guid CashSessionId FK
+        guid SoldBy FK
+        datetimeoffset SoldAt
+        guid PrescriptionCheckedBy FK "si llevaba fórmula"
+    }
+    SaleItems {
+        guid Id PK
+        guid SaleId FK
+        guid ProductId FK
+        guid SaleUnitId FK
+        int Quantity
+        decimal UnitPrice "copia, IVA incluido"
+        int VatRate "copia"
+        int ConversionFactor "copia"
+        bool RequiresPrescription "copia"
+    }
+    SaleItemBatches {
+        guid Id PK
+        guid SaleItemId FK
+        guid BatchId FK
+        int Quantity "unidades base"
+        decimal UnitCost "costo del lote"
+    }
+    Payments {
+        guid Id PK
+        guid SaleId FK
+        int Method "1 efectivo, 2 tarjeta, 3 billetera, 4 transferencia"
+        decimal Amount "aplicado a la venta"
+        decimal Received "efectivo entregado"
+    }
+    SaleCounters {
+        guid PharmacyId PK
+        bigint LastNumber
+    }
     CashMovements {
         guid Id PK
         guid CashSessionId FK
@@ -158,6 +202,7 @@ erDiagram
 | `SaleUnits (ProductId, Name)` único | Un producto no tiene dos presentaciones con el mismo nombre. |
 | `Customers (PharmacyId, DocumentType, DocumentNumber)` único | Un cliente por documento. |
 | `CashSessions (PharmacyId)` único, **filtrado** `WHERE Status = 1`, llamado `IX_CashSessions_OneOpenPerPharmacy` | **Un solo turno abierto por farmacia** (una caja). Los cerrados no cuentan. `UnitOfWork` lo reconoce por su nombre para dar un mensaje claro. |
+| `Sales (PharmacyId, Number)` único | Un número de tiquete por venta. Los números los asigna `SaleCounters`; el índice es la última defensa. |
 | `RefreshTokens (TokenHash)` único | Búsqueda directa del token presentado. |
 
 Los demás índices aceleran consultas frecuentes: lotes de un producto por vencimiento (FEFO), kardex por lote o producto y fecha, compras por estado y fecha.
@@ -173,6 +218,18 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 | `Customers.DocumentType` | Códigos DIAN: 12 = TI, 13 = CC, 22 = CE, 31 = NIT, 41 = Pasaporte, 47 = PEP, 48 = PPT |
 | `CashSessions.Status` | 1 = Abierto, 2 = Cerrado |
 | `CashMovements.Type` | 1 = Ingreso, 2 = Egreso |
+| `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia |
+| `Products.VatRate`, `SaleItems.VatRate` | Igual que `PurchaseItems.VatRate`: el valor es el porcentaje |
+
+## El consecutivo del tiquete
+
+`SaleCounters` guarda el último número usado por cada farmacia. `TicketNumberSequence` lo incrementa con **una sola sentencia** (`MERGE … WITH (HOLDLOCK) … OUTPUT`), dentro de la misma transacción que guarda la venta:
+
+- **Leer el número y guardarlo en dos pasos no sirve:** dos cajas leerían el mismo número. Un test lo comprueba: con esa versión ingenua, las ventas simultáneas repiten número.
+- **`HOLDLOCK` mantiene la fila bloqueada hasta el commit.** Una venta simultánea **espera** unos milisegundos en vez de fallar.
+- **Si la venta falla** (stock, pagos), la transacción se deshace y el número no se consume: los tiquetes no tienen saltos.
+
+En la fase 6, el contador podrá entregar rangos de números por equipo para vender sin conexión.
 
 ## Las tablas de Identity
 
@@ -195,6 +252,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddPharmacyVatResponsibility` | `Pharmacies.IsVatResponsible` (editada a mano: `defaultValue: true`) |
 | `AddPurchases` | Compras y sus líneas |
 | `AddCashSessions` | Turnos de caja y movimientos |
+| `AddSales` | Ventas, líneas, lotes de cada línea, pagos, contador de tiquetes y `Products.VatRate` |
 
 Comandos (desde la raíz del repo):
 

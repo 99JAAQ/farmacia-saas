@@ -6,6 +6,7 @@ using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Purchases;
+using Farmacia.Domain.Sales;
 using Farmacia.Domain.Suppliers;
 
 namespace Farmacia.Application.Tests.Fakes;
@@ -125,6 +126,11 @@ public sealed class InMemoryBatchRepository : IBatchRepository
 {
     public List<Batch> Items { get; } = [];
 
+    public Task<IReadOnlyList<Batch>> GetInStockAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Batch>>(
+            Items.Where(b => b.PharmacyId == pharmacyId && productIds.Contains(b.ProductId) && b.Quantity > 0).ToList());
+
     public void Add(Batch batch) => Items.Add(batch);
 }
 
@@ -139,11 +145,26 @@ public sealed class InMemoryPharmacyRepository : IPharmacyRepository
 public sealed class FakeUnitOfWork : IUnitOfWork
 {
     public int SaveCount { get; private set; }
+    public int CommitCount { get; private set; }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         SaveCount++;
         return Task.FromResult(1);
+    }
+
+    public Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IUnitOfWorkTransaction>(new FakeTransaction(this));
+
+    private sealed class FakeTransaction(FakeUnitOfWork owner) : IUnitOfWorkTransaction
+    {
+        public Task CommitAsync(CancellationToken cancellationToken = default)
+        {
+            owner.CommitCount++;
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
 
@@ -191,4 +212,26 @@ public sealed class FakeUserReader : IUserReader
         Task.FromResult<IReadOnlyDictionary<Guid, string>>(Users
             .Where(u => u.Value.PharmacyId == pharmacyId && userIds.Contains(u.Key))
             .ToDictionary(u => u.Key, u => u.Value.Name));
+}
+
+public sealed class InMemorySaleRepository : ISaleRepository
+{
+    public List<Sale> Items { get; } = [];
+
+    public Task<Sale?> GetByIdAsync(Guid pharmacyId, Guid saleId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Id == saleId));
+
+    public void Add(Sale sale) => Items.Add(sale);
+}
+
+/// <summary>Consecutive per pharmacy, like the real one (without its locking: that is tested against SQL Server).</summary>
+public sealed class FakeTicketNumberSequence : ITicketNumberSequence
+{
+    private readonly Dictionary<Guid, long> _last = [];
+
+    public Task<long> NextAsync(Guid pharmacyId, CancellationToken cancellationToken)
+    {
+        _last[pharmacyId] = _last.GetValueOrDefault(pharmacyId) + 1;
+        return Task.FromResult(_last[pharmacyId]);
+    }
 }

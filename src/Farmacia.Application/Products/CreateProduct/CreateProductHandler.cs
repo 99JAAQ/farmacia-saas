@@ -23,7 +23,7 @@ public sealed class CreateProductHandler(
         var product = Product.Create(
             pharmacyId, command.Name, command.BaseUnitName, command.RequiresPrescription,
             command.ActiveIngredient, command.Concentration, command.PharmaceuticalForm,
-            command.SanitaryRegistration, command.CategoryId);
+            command.SanitaryRegistration, command.CategoryId, command.VatRate);
 
         foreach (var unit in command.SaleUnits)
             product.AddSaleUnit(unit.Name, unit.ConversionFactor, unit.Price, unit.Barcode);

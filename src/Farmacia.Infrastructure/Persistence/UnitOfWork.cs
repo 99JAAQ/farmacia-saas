@@ -3,6 +3,7 @@ using Farmacia.Application.Common.Exceptions;
 using Farmacia.Infrastructure.Persistence.Configurations;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Farmacia.Infrastructure.Persistence;
 
@@ -33,9 +34,21 @@ internal sealed class UnitOfWork(FarmaciaDbContext db) : IUnitOfWork
         }
     }
 
+    public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        new Transaction(await db.Database.BeginTransactionAsync(cancellationToken));
+
     // SQL Server names the violated index in the message: a specific text where the generic one would confuse.
     private static string MessageFor(SqlException sql) =>
         sql.Message.Contains(CashSessionConfiguration.OneOpenPerPharmacyIndex, StringComparison.Ordinal)
             ? "Ya hay un turno de caja abierto. Debe cerrarse antes de abrir otro."
             : "Ya existe un registro con esos datos (por ejemplo, un código de barras repetido).";
+
+    /// <summary>SaveChanges joins the open transaction instead of committing on its own.</summary>
+    private sealed class Transaction(IDbContextTransaction transaction) : IUnitOfWorkTransaction
+    {
+        public Task CommitAsync(CancellationToken cancellationToken = default) => transaction.CommitAsync(cancellationToken);
+
+        // Without a commit, disposing rolls back.
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
+    }
 }

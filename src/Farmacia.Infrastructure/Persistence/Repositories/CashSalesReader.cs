@@ -1,13 +1,19 @@
 using Farmacia.Application.Abstractions.Persistence;
+using Farmacia.Domain.Sales;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacia.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Sales do not exist yet (they come in the next step), so a shift has no cash from sales. When they do, this
-/// adds up the shift's cash payments minus the change and the refunds; the closing already depends on it.
+/// The cash a shift's sales put in the drawer: the cash payments' amount applied to each sale (what the customer
+/// handed over minus the change). Refunds will subtract here when they exist.
 /// </summary>
-internal sealed class CashSalesReader : ICashSalesReader
+internal sealed class CashSalesReader(FarmaciaDbContext db) : ICashSalesReader
 {
-    public Task<decimal> GetNetCashAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
-        Task.FromResult(0m);
+    public async Task<decimal> GetNetCashAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
+        await db.Sales
+            .Where(s => s.PharmacyId == pharmacyId && s.CashSessionId == cashSessionId)
+            .SelectMany(s => s.Payments)
+            .Where(p => p.Method == PaymentMethod.Cash)
+            .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 }
