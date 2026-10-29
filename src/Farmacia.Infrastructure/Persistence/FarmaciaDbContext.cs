@@ -29,7 +29,8 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<Sale> Sales => Set<Sale>();
-    public DbSet<SaleCounter> SaleCounters => Set<SaleCounter>();
+    public DbSet<SaleReturn> SaleReturns => Set<SaleReturn>();
+    public DbSet<DocumentCounter> DocumentCounters => Set<DocumentCounter>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

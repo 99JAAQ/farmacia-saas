@@ -1,5 +1,6 @@
 using Farmacia.Application.Cash;
 using Farmacia.Application.Purchases;
+using Farmacia.Application.SaleReturns;
 using Farmacia.Application.Sales;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<PurchaseReader>();
         services.AddScoped<CashSessionReader>();
         services.AddScoped<SaleReader>();
+        services.AddScoped<SaleReturnReader>();
 
         return services;
     }

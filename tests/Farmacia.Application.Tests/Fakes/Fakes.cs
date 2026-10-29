@@ -131,6 +131,10 @@ public sealed class InMemoryBatchRepository : IBatchRepository
         Task.FromResult<IReadOnlyList<Batch>>(
             Items.Where(b => b.PharmacyId == pharmacyId && productIds.Contains(b.ProductId) && b.Quantity > 0).ToList());
 
+    public Task<IReadOnlyList<Batch>> GetByIdsAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> batchIds, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Batch>>(Items.Where(b => b.PharmacyId == pharmacyId && batchIds.Contains(b.Id)).ToList());
+
     public void Add(Batch batch) => Items.Add(batch);
 }
 
@@ -221,6 +225,9 @@ public sealed class InMemorySaleRepository : ISaleRepository
     public Task<Sale?> GetByIdAsync(Guid pharmacyId, Guid saleId, CancellationToken cancellationToken) =>
         Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Id == saleId));
 
+    public Task<Sale?> GetByNumberAsync(Guid pharmacyId, long number, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(s => s.PharmacyId == pharmacyId && s.Number == number));
+
     public Task<IReadOnlyList<Sale>> ListByCashSessionAsync(
         Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Sale>>(Items
@@ -231,14 +238,30 @@ public sealed class InMemorySaleRepository : ISaleRepository
     public void Add(Sale sale) => Items.Add(sale);
 }
 
-/// <summary>Consecutive per pharmacy, like the real one (without its locking: that is tested against SQL Server).</summary>
-public sealed class FakeTicketNumberSequence : ITicketNumberSequence
+/// <summary>Consecutive per pharmacy and document, like the real one (without its locking: that is tested against SQL Server).</summary>
+public sealed class FakeDocumentNumberSequence : IDocumentNumberSequence
 {
-    private readonly Dictionary<Guid, long> _last = [];
+    private readonly Dictionary<(Guid, NumberedDocument), long> _last = [];
 
-    public Task<long> NextAsync(Guid pharmacyId, CancellationToken cancellationToken)
+    public Task<long> NextAsync(Guid pharmacyId, NumberedDocument document, CancellationToken cancellationToken)
     {
-        _last[pharmacyId] = _last.GetValueOrDefault(pharmacyId) + 1;
-        return Task.FromResult(_last[pharmacyId]);
+        _last[(pharmacyId, document)] = _last.GetValueOrDefault((pharmacyId, document)) + 1;
+        return Task.FromResult(_last[(pharmacyId, document)]);
     }
+}
+
+public sealed class InMemorySaleReturnRepository : ISaleReturnRepository
+{
+    public List<SaleReturn> Items { get; } = [];
+
+    public Task<SaleReturn?> GetByIdAsync(Guid pharmacyId, Guid saleReturnId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(r => r.PharmacyId == pharmacyId && r.Id == saleReturnId));
+
+    public Task<IReadOnlyList<SaleReturn>> ListBySaleAsync(Guid pharmacyId, Guid saleId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SaleReturn>>(Items
+            .Where(r => r.PharmacyId == pharmacyId && r.SaleId == saleId)
+            .OrderBy(r => r.Number)
+            .ToList());
+
+    public void Add(SaleReturn saleReturn) => Items.Add(saleReturn);
 }

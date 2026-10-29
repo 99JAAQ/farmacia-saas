@@ -26,7 +26,7 @@ public sealed class RegisterSaleHandler(
     IProductRepository products,
     IBatchRepository batches,
     ISaleRepository sales,
-    ITicketNumberSequence ticketNumbers,
+    IDocumentNumberSequence documentNumbers,
     IUnitOfWork unitOfWork,
     ICurrentPharmacy currentPharmacy,
     ICurrentUser currentUser,
@@ -60,7 +60,7 @@ public sealed class RegisterSaleHandler(
         // simultaneous sale waits instead of repeating it); if anything below fails, the rollback gives it back.
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
-        var number = await ticketNumbers.NextAsync(pharmacyId, cancellationToken);
+        var number = await documentNumbers.NextAsync(pharmacyId, NumberedDocument.Sale, cancellationToken);
         var sale = Sale.Register(
             pharmacyId, number, session.Id, currentUser.UserId, clock.Now, lines, payments, command.PrescriptionChecked);
         sales.Add(sale);

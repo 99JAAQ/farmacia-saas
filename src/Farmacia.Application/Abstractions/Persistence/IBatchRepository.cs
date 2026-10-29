@@ -11,6 +11,10 @@ public interface IBatchRepository
     Task<IReadOnlyList<Batch>> GetInStockAsync(
         Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken);
 
+    /// <summary>The given batches, tracked: e.g. those a sale took units from, to put returned units back.</summary>
+    Task<IReadOnlyList<Batch>> GetByIdsAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> batchIds, CancellationToken cancellationToken);
+
     /// <summary>Its pending kardex movements are saved with it, in the same transaction.</summary>
     void Add(Batch batch);
 }

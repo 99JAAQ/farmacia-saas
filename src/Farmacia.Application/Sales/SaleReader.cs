@@ -4,13 +4,17 @@ using Farmacia.Domain.Sales;
 namespace Farmacia.Application.Sales;
 
 /// <summary>Builds the ticket DTO with product, sale unit and cashier names (they live in other aggregates).</summary>
-public sealed class SaleReader(IProductRepository products, IUserReader users)
+public sealed class SaleReader(IProductRepository products, IUserReader users, ISaleReturnRepository returns)
 {
     public async Task<SaleDto> ToDtoAsync(Sale sale, CancellationToken cancellationToken)
     {
         var productIds = sale.Items.Select(i => i.ProductId).Distinct().ToList();
         var catalog = (await products.GetByIdsAsync(sale.PharmacyId, productIds, cancellationToken)).ToDictionary(p => p.Id);
         var names = await users.GetNamesAsync(sale.PharmacyId, [sale.SoldBy], cancellationToken);
+        var returned = (await returns.ListBySaleAsync(sale.PharmacyId, sale.Id, cancellationToken))
+            .SelectMany(r => r.Items)
+            .GroupBy(i => i.SaleItemId)
+            .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
 
         return new SaleDto(
             sale.Id,
@@ -29,7 +33,8 @@ public sealed class SaleReader(IProductRepository products, IUserReader users)
                     var unit = product?.SaleUnits.SingleOrDefault(u => u.Id == item.SaleUnitId);
                     return new SaleItemDto(
                         item.Id, item.ProductId, product?.Name ?? "Producto desconocido", unit?.Name ?? "",
-                        item.Quantity, item.UnitPrice, item.VatRate, item.Total, item.Vat, item.RequiresPrescription);
+                        item.Quantity, item.UnitPrice, item.VatRate, item.Total, item.Vat, item.RequiresPrescription,
+                        returned.GetValueOrDefault(item.Id));
                 })
                 .ToList(),
             sale.Payments

@@ -664,6 +664,132 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.ToTable("SaleItemBatches", (string)null);
                 });
 
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CashSessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Number")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("ReturnedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ReturnedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashSessionId");
+
+                    b.HasIndex("ReturnedBy");
+
+                    b.HasIndex("SaleId");
+
+                    b.HasIndex("PharmacyId", "CashSessionId");
+
+                    b.HasIndex("PharmacyId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("PharmacyId", "SaleId");
+
+                    b.ToTable("SaleReturns");
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturnItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("ConversionFactor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Disposition")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SaleItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SaleReturnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SaleUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PharmacyId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SaleItemId");
+
+                    b.HasIndex("SaleReturnId");
+
+                    b.HasIndex("SaleUnitId");
+
+                    b.ToTable("SaleReturnItems", (string)null);
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturnItemBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SaleReturnItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("PharmacyId");
+
+                    b.HasIndex("SaleReturnItemId");
+
+                    b.ToTable("SaleReturnItemBatches", (string)null);
+                });
+
             modelBuilder.Entity("Farmacia.Domain.Suppliers.Supplier", b =>
                 {
                     b.Property<Guid>("Id")
@@ -823,17 +949,20 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
-            modelBuilder.Entity("Farmacia.Infrastructure.Persistence.SaleCounter", b =>
+            modelBuilder.Entity("Farmacia.Infrastructure.Persistence.DocumentCounter", b =>
                 {
                     b.Property<Guid>("PharmacyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("Document")
+                        .HasColumnType("int");
+
                     b.Property<long>("LastNumber")
                         .HasColumnType("bigint");
 
-                    b.HasKey("PharmacyId");
+                    b.HasKey("PharmacyId", "Document");
 
-                    b.ToTable("SaleCounters", (string)null);
+                    b.ToTable("DocumentCounters", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -1227,6 +1356,87 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturn", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Cash.CashSession", null)
+                        .WithMany()
+                        .HasForeignKey("CashSessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReturnedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Sales.Sale", null)
+                        .WithMany()
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturnItem", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Products.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Sales.SaleItem", null)
+                        .WithMany()
+                        .HasForeignKey("SaleItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Sales.SaleReturn", null)
+                        .WithMany("Items")
+                        .HasForeignKey("SaleReturnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Products.SaleUnit", null)
+                        .WithMany()
+                        .HasForeignKey("SaleUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturnItemBatch", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Inventory.Batch", null)
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Sales.SaleReturnItem", null)
+                        .WithMany("Batches")
+                        .HasForeignKey("SaleReturnItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Farmacia.Domain.Suppliers.Supplier", b =>
                 {
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
@@ -1254,7 +1464,7 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Farmacia.Infrastructure.Persistence.SaleCounter", b =>
+            modelBuilder.Entity("Farmacia.Infrastructure.Persistence.DocumentCounter", b =>
                 {
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
                         .WithMany()
@@ -1337,6 +1547,16 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Farmacia.Domain.Sales.SaleItem", b =>
+                {
+                    b.Navigation("Batches");
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturn", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Sales.SaleReturnItem", b =>
                 {
                     b.Navigation("Batches");
                 });

@@ -74,12 +74,12 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
     }
 }
 
-public class SaleCounterConfiguration : IEntityTypeConfiguration<SaleCounter>
+public class DocumentCounterConfiguration : IEntityTypeConfiguration<DocumentCounter>
 {
-    public void Configure(EntityTypeBuilder<SaleCounter> builder)
+    public void Configure(EntityTypeBuilder<DocumentCounter> builder)
     {
-        builder.ToTable("SaleCounters");
-        builder.HasKey(c => c.PharmacyId);
+        builder.ToTable("DocumentCounters");
+        builder.HasKey(c => new { c.PharmacyId, c.Document });
         builder.HasOne<Pharmacy>().WithMany().HasForeignKey(c => c.PharmacyId).OnDelete(DeleteBehavior.Restrict);
     }
 }

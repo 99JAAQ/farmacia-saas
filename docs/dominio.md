@@ -95,7 +95,7 @@ stateDiagram-v2
   Ejemplo: base de $100.000, un egreso de $8.000 y ventas en efectivo por $350.000 dan $442.000 esperados. Si se cuentan $440.000, hay un faltante de $2.000.
 - **Conteo a ciegas:** mientras el turno está abierto, el cajero **no ve** el esperado; la API no se lo envía. Si lo viera, tendería a "contar" hasta que le diera, y un faltante real quedaría oculto. El dueño sí lo ve en todo momento.
 - **Al cerrar se guardan el esperado y el contado.** El cierre es un documento histórico: si después se corrige una venta, el cierre que hizo el cajero no cambia solo.
-- **El turno no suma las ventas una por una**, porque todas pelearían por la misma fila. Al cerrar, el caso de uso calcula el efectivo neto de las ventas del turno (`ICashSalesReader`). Mientras no existan las ventas, ese valor es $0.
+- **El turno no suma las ventas una por una**, porque todas pelearían por la misma fila. Al cerrar, el caso de uso calcula el efectivo neto de las ventas del turno (`ICashSalesReader`): el efectivo aplicado de las ventas del turno menos los reintegros de las devoluciones hechas en él (de ventas de cualquier turno, porque el dinero sale de este cajón).
 - **Al abrir se sugiere como base lo que se contó en el último cierre.**
 
 ## Ventas
@@ -136,8 +136,14 @@ Ver [ADR 0009](adr/0009-devoluciones-como-documento-aparte.md).
 - **El reintegro (`Refund`) es lo pagado por esas unidades**, IVA incluido, siempre en efectivo y desde el turno de quien hace la devolución.
 - Como en la venta, **primero se valida todo y después se reingresa**: una línea inválida deja todos los lotes intactos.
 
+**El caso de uso `RegisterSaleReturn`:**
+- exige que el turno abierto sea de quien devuelve (403 si es de otro cajero, 409 si no hay turno);
+- dentro de una transacción, **reserva el número de la devolución antes de leer las devoluciones anteriores del tiquete**. El bloqueo del contador pone en fila las devoluciones simultáneas: la segunda ve la primera y no puede devolver otra vez lo mismo;
+- guarda la devolución, los lotes y el kardex en un solo `SaveChanges`.
+
+El tiquete (`SaleDto`) trae por línea `ReturnedQuantity` (lo ya devuelto), y se puede buscar por su número impreso (`GetSaleByNumber`), que es como empieza una devolución en el mostrador.
+
 **Pendiente en próximos pasos:**
-- los casos de uso, la persistencia y la resta de los reintegros en el cierre de caja (paso 4b);
 - el fiado, con cuentas por cobrar y abonos.
 
 ## Colombia en el código

@@ -25,7 +25,13 @@ erDiagram
     Sales ||--|{ Payments : "pagos"
     SaleItems ||--|{ SaleItemBatches : "salió de"
     Batches ||--o{ SaleItemBatches : ""
-    Pharmacies ||--o| SaleCounters : "último tiquete"
+    Sales ||--o{ SaleReturns : "devoluciones"
+    CashSessions ||--o{ SaleReturns : "reintegros del turno"
+    SaleReturns ||--|{ SaleReturnItems : "líneas"
+    SaleItems ||--o{ SaleReturnItems : "se devuelve en"
+    SaleReturnItems ||--o{ SaleReturnItemBatches : "volvió a"
+    Batches ||--o{ SaleReturnItemBatches : ""
+    Pharmacies ||--o{ DocumentCounters : "últimos números"
 
     Pharmacies {
         guid Id PK
@@ -161,8 +167,33 @@ erDiagram
         decimal Amount "aplicado a la venta"
         decimal Received "efectivo entregado"
     }
-    SaleCounters {
+    SaleReturns {
+        guid Id PK
+        bigint Number "consecutivo propio"
+        guid SaleId FK
+        guid CashSessionId FK "turno del reintegro"
+        guid ReturnedBy FK
+        datetimeoffset ReturnedAt
+        string Reason
+    }
+    SaleReturnItems {
+        guid Id PK
+        guid SaleReturnId FK
+        guid SaleItemId FK
+        int Quantity "en la presentación vendida"
+        decimal UnitPrice "copia del tiquete"
+        int Disposition "1 reingresa, 2 se descarta"
+    }
+    SaleReturnItemBatches {
+        guid Id PK
+        guid SaleReturnItemId FK
+        guid BatchId FK
+        int Quantity "unidades base"
+        decimal UnitCost "costo del lote"
+    }
+    DocumentCounters {
         guid PharmacyId PK
+        int Document PK "1 tiquete, 2 devolución"
         bigint LastNumber
     }
     CashMovements {
@@ -202,7 +233,8 @@ erDiagram
 | `SaleUnits (ProductId, Name)` único | Un producto no tiene dos presentaciones con el mismo nombre. |
 | `Customers (PharmacyId, DocumentType, DocumentNumber)` único | Un cliente por documento. |
 | `CashSessions (PharmacyId)` único, **filtrado** `WHERE Status = 1`, llamado `IX_CashSessions_OneOpenPerPharmacy` | **Un solo turno abierto por farmacia** (una caja). Los cerrados no cuentan. `UnitOfWork` lo reconoce por su nombre para dar un mensaje claro. |
-| `Sales (PharmacyId, Number)` único | Un número de tiquete por venta. Los números los asigna `SaleCounters`; el índice es la última defensa. |
+| `Sales (PharmacyId, Number)` único | Un número de tiquete por venta. Los números los asigna `DocumentCounters`; el índice es la última defensa. |
+| `SaleReturns (PharmacyId, Number)` único | Igual, para las devoluciones (su propio consecutivo). |
 | `RefreshTokens (TokenHash)` único | Búsqueda directa del token presentado. |
 
 Los demás índices aceleran consultas frecuentes: lotes de un producto por vencimiento (FEFO), kardex por lote o producto y fecha, compras por estado y fecha.
@@ -220,14 +252,17 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 | `CashMovements.Type` | 1 = Ingreso, 2 = Egreso |
 | `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia |
 | `Products.VatRate`, `SaleItems.VatRate` | Igual que `PurchaseItems.VatRate`: el valor es el porcentaje |
+| `SaleReturnItems.Disposition` | 1 = Vuelve al inventario, 2 = Se descarta |
+| `DocumentCounters.Document` | 1 = Tiquete de venta, 2 = Devolución |
 
-## El consecutivo del tiquete
+## Los consecutivos (tiquetes y devoluciones)
 
-`SaleCounters` guarda el último número usado por cada farmacia. `TicketNumberSequence` lo incrementa con **una sola sentencia** (`MERGE … WITH (HOLDLOCK) … OUTPUT`), dentro de la misma transacción que guarda la venta:
+`DocumentCounters` guarda el último número usado por cada farmacia **y tipo de documento** (tiquete, devolución; el fiado y los abonos serán valores nuevos del enum `NumberedDocument`). `DocumentNumberSequence` lo incrementa con **una sola sentencia** (`MERGE … WITH (HOLDLOCK) … OUTPUT`), dentro de la misma transacción que guarda el documento:
 
 - **Leer el número y guardarlo en dos pasos no sirve:** dos cajas leerían el mismo número. Un test lo comprueba: con esa versión ingenua, las ventas simultáneas repiten número.
 - **`HOLDLOCK` mantiene la fila bloqueada hasta el commit.** Una venta simultánea **espera** unos milisegundos en vez de fallar.
 - **Si la venta falla** (stock, pagos), la transacción se deshace y el número no se consume: los tiquetes no tienen saltos.
+- **El bloqueo también ordena las devoluciones.** `RegisterSaleReturn` reserva su número **antes** de leer las devoluciones anteriores del tiquete: una devolución simultánea espera y, al seguir, ya ve la primera. Así dos cajas nunca devuelven entre las dos más de lo vendido. Un test lo comprueba, y falla si se lee antes de reservar.
 
 En la fase 6, el contador podrá entregar rangos de números por equipo para vender sin conexión.
 
@@ -253,6 +288,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddPurchases` | Compras y sus líneas |
 | `AddCashSessions` | Turnos de caja y movimientos |
 | `AddSales` | Ventas, líneas, lotes de cada línea, pagos, contador de tiquetes y `Products.VatRate` |
+| `AddSaleReturns` | Devoluciones con sus líneas y lotes; `SaleCounters` pasa a `DocumentCounters` (editada a mano: copia los números de tiquete antes de borrar la tabla vieja, y al revés en `Down`) |
 
 Comandos (desde la raíz del repo):
 

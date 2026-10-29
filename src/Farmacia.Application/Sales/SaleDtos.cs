@@ -19,6 +19,7 @@ public sealed record SaleDto(
     IReadOnlyList<SaleItemDto> Items,
     IReadOnlyList<PaymentDto> Payments);
 
+/// <param name="ReturnedQuantity">Already returned, in the same sale unit: Quantity minus this is what can still be returned.</param>
 public sealed record SaleItemDto(
     Guid Id,
     Guid ProductId,
@@ -29,7 +30,8 @@ public sealed record SaleItemDto(
     VatRate VatRate,
     decimal Total,
     decimal Vat,
-    bool RequiresPrescription);
+    bool RequiresPrescription,
+    int ReturnedQuantity);
 
 /// <param name="Amount">The part of the sale paid with this method.</param>
 /// <param name="Received">Cash only: what the customer handed over.</param>

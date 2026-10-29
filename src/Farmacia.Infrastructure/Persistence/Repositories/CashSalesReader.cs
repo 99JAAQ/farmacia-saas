@@ -5,15 +5,26 @@ using Microsoft.EntityFrameworkCore;
 namespace Farmacia.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// The cash a shift's sales put in the drawer: the cash payments' amount applied to each sale (what the customer
-/// handed over minus the change). Refunds will subtract here when they exist.
+/// The cash a shift's sales left in the drawer: the cash payments' amount applied to each sale (what the customer
+/// handed over minus the change), minus the refunds paid in that shift (returns of sales from any shift: the money
+/// leaves this drawer).
 /// </summary>
 internal sealed class CashSalesReader(FarmaciaDbContext db) : ICashSalesReader
 {
-    public async Task<decimal> GetNetCashAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken) =>
-        await db.Sales
+    public async Task<decimal> GetNetCashAsync(Guid pharmacyId, Guid cashSessionId, CancellationToken cancellationToken)
+    {
+        var received = await db.Sales
             .Where(s => s.PharmacyId == pharmacyId && s.CashSessionId == cashSessionId)
             .SelectMany(s => s.Payments)
             .Where(p => p.Method == PaymentMethod.Cash)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
+
+        // Refund is computed (quantity × price), so the sum is written over the items' stored columns.
+        var refunded = await db.SaleReturns
+            .Where(r => r.PharmacyId == pharmacyId && r.CashSessionId == cashSessionId)
+            .SelectMany(r => r.Items)
+            .SumAsync(i => (decimal?)(i.Quantity * i.UnitPrice), cancellationToken) ?? 0m;
+
+        return received - refunded;
+    }
 }

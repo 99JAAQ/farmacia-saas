@@ -25,7 +25,8 @@ public class SaleHandlersTests
     private readonly InMemoryProductRepository _products = new();
     private readonly InMemoryBatchRepository _batches = new();
     private readonly InMemorySaleRepository _sales = new();
-    private readonly FakeTicketNumberSequence _ticketNumbers = new();
+    private readonly InMemorySaleReturnRepository _returns = new();
+    private readonly FakeDocumentNumberSequence _documentNumbers = new();
     private readonly FakeUserReader _users = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
 
@@ -46,9 +47,9 @@ public class SaleHandlersTests
 
     private Task<SaleDto> SellAsync(Guid userId, int boxes = 1, decimal cash = 50_000m, Guid? productId = null) =>
         new RegisterSaleHandler(
-                _sessions, _products, _batches, _sales, _ticketNumbers, _unitOfWork,
+                _sessions, _products, _batches, _sales, _documentNumbers, _unitOfWork,
                 new FakeCurrentPharmacy(_pharmacyId), new FakeCurrentUser(userId, Roles.Cashier), new FakeClock(Now),
-                new SaleReader(_products, _users))
+                new SaleReader(_products, _users, _returns))
             .Handle(new RegisterSaleCommand(
                     [new RegisterSaleLine(productId ?? _product.Id, _box.Id, boxes)],
                     [new RegisterSalePayment(PaymentMethod.Cash, cash)],
@@ -123,7 +124,7 @@ public class SaleHandlersTests
     {
         var ticket = await SellAsync(_ana);
         GetSaleByIdHandler Handler(Guid pharmacyId) =>
-            new(_sales, new FakeCurrentPharmacy(pharmacyId), new SaleReader(_products, _users));
+            new(_sales, new FakeCurrentPharmacy(pharmacyId), new SaleReader(_products, _users, _returns));
 
         var found = await Handler(_pharmacyId).Handle(new GetSaleByIdQuery(ticket.Id), CancellationToken.None);
         Assert.Equal(ticket.Number, found.Number);
@@ -139,7 +140,7 @@ public class SaleHandlersTests
         var second = await SellAsync(_ana);
         var shiftId = _sessions.Items.Single().Id;
 
-        var list = await new ListSalesHandler(_sales, new FakeCurrentPharmacy(_pharmacyId), new SaleReader(_products, _users))
+        var list = await new ListSalesHandler(_sales, new FakeCurrentPharmacy(_pharmacyId), new SaleReader(_products, _users, _returns))
             .Handle(new ListSalesQuery(shiftId), CancellationToken.None);
 
         Assert.Equal([second.Number, first.Number], list.Select(s => s.Number));
