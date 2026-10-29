@@ -1,11 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
-import { Link } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/features/auth/useAuth'
-import { cashKeys, getCurrentCashSession, type CashSession } from '@/features/cash/api'
+import type { CashSession } from '@/features/cash/api'
+import { RequireOwnShift } from '@/features/cash/RequireOwnShift'
 import { ProductPicker } from '@/features/products/ProductPicker'
 import type { User } from '@/lib/api/types'
 import { formatMoney } from '@/lib/format'
@@ -20,36 +19,7 @@ import { useCart } from './useCart'
 
 /** Selling needs a shift of one's own: the cash of every sale belongs to whoever opened the register. */
 export function SellPage() {
-  const { user } = useAuth()
-  const current = useQuery({
-    queryKey: cashKeys.current,
-    queryFn: ({ signal }) => getCurrentCashSession(signal),
-  })
-
-  if (current.isPending) return <p className="text-sm text-muted-foreground">Cargando…</p>
-  if (current.isError) return <p className="text-sm text-destructive">{current.error.message}</p>
-
-  const { session } = current.data
-  if (session === null || !session.isMine)
-    return (
-      <Card className="max-w-lg">
-        <CardHeader>
-          <CardTitle>{session === null ? 'La caja está cerrada' : `La caja está abierta por ${session.openedByName}`}</CardTitle>
-          <CardDescription>
-            {session === null
-              ? 'Para vender, primero abra su turno con la base de efectivo.'
-              : 'Solo quien abrió el turno puede vender en él. Si va a atender usted, ese turno debe cerrarse y usted abrir el suyo.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link to="/caja" className={buttonVariants()}>
-            Ir a Caja
-          </Link>
-        </CardContent>
-      </Card>
-    )
-
-  return user && <PointOfSale user={user} session={session} />
+  return <RequireOwnShift action="vender">{(session, user) => <PointOfSale user={user} session={session} />}</RequireOwnShift>
 }
 
 function PointOfSale({ user, session }: { user: User; session: CashSession }) {

@@ -110,6 +110,7 @@ web/
     ├── components/
     │   ├── AppLayout.tsx    → barra lateral (o superior en pantallas angostas) y menú según permisos
     │   ├── navigation.ts    → las secciones de la app: ruta, nombre, ícono y política
+    │   ├── PrintDialog.tsx  → diálogo con Imprimir para el tiquete y el comprobante (80 mm)
     │   ├── Logo.tsx         → marca (el mismo dibujo que public/favicon.svg)
     │   └── ui/              → componentes de shadcn/ui (generados por la CLI; se editan poco)
     ├── features/            → una carpeta por funcionalidad
@@ -118,7 +119,8 @@ web/
     │   ├── suppliers/       → api, buscador y creación de proveedor
     │   ├── purchases/       → pantallas de compras
     │   ├── cash/            → pantalla de caja
-    │   └── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
+    │   ├── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
+    │   └── returns/         → devoluciones: borrador (lógica pura), pantalla, comprobante
     ├── lib/
     │   ├── api/http.ts      → cliente HTTP (token en memoria, refresh único)
     │   ├── format.ts        → dinero, fechas y horas en formato colombiano

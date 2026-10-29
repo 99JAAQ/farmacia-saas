@@ -7,6 +7,7 @@ import { CashPage } from '@/features/cash/CashPage'
 import { NewPurchasePage } from '@/features/purchases/NewPurchasePage'
 import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
+import { ReturnsPage } from '@/features/returns/ReturnsPage'
 import { SellPage } from '@/features/sales/SellPage'
 import { CatalogPage } from '@/pages/CatalogPage'
 import { HomePage } from '@/pages/HomePage'
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
             children: [
               { path: 'caja', element: <CashPage /> },
               { path: 'vender', element: <SellPage /> },
+              { path: 'devoluciones', element: <ReturnsPage /> },
             ],
           },
           {

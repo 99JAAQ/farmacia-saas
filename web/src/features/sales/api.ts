@@ -15,6 +15,8 @@ export interface SaleItem {
   /** Included in the total (prices include VAT). */
   vat: number
   requiresPrescription: boolean
+  /** Already returned, in the same sale unit: quantity minus this is what can still be returned. */
+  returnedQuantity: number
 }
 
 export interface Payment {
@@ -63,6 +65,7 @@ export interface RegisterSaleRequest {
 export const saleKeys = {
   byShift: (cashSessionId: string) => ['sales', 'shift', cashSessionId] as const,
   detail: (id: string) => ['sales', id] as const,
+  byNumber: (number: number) => ['sales', 'number', number] as const,
 }
 
 /** Answers with the whole ticket, ready to print. */
@@ -72,6 +75,11 @@ export function registerSale(request: RegisterSaleRequest): Promise<Sale> {
 
 export function getSale(id: string, signal?: AbortSignal): Promise<Sale> {
   return api<Sale>(`/api/sales/${id}`, { signal })
+}
+
+/** By the number printed on the ticket: how a return starts at the counter. */
+export function getSaleByNumber(number: number, signal?: AbortSignal): Promise<Sale> {
+  return api<Sale>(`/api/sales/by-number/${number}`, { signal })
 }
 
 /** Newest first. */

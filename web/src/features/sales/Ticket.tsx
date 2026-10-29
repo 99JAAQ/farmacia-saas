@@ -1,7 +1,5 @@
-import { Printer } from 'lucide-react'
 import type { RefObject } from 'react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { PrintDialog } from '@/components/PrintDialog'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import type { Sale } from './api'
 import { paymentMethodLabels } from './labels'
@@ -84,22 +82,8 @@ export function TicketDialog({
   finalFocus,
 }: TicketDialogProps) {
   return (
-    <Dialog open={sale !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-sm" finalFocus={finalFocus}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        {sale && <Ticket sale={sale} />}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer />
-            Imprimir
-          </Button>
-          <Button autoFocus onClick={onClose}>
-            {closeLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <PrintDialog open={sale !== null} title={title} closeLabel={closeLabel} onClose={onClose} finalFocus={finalFocus}>
+      {sale && <Ticket sale={sale} />}
+    </PrintDialog>
   )
 }

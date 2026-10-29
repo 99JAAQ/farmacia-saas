@@ -63,6 +63,7 @@ Rutas actuales (`src/router.tsx`):
 | `/login` | Pública | Inicio de sesión |
 | `/` | Autenticado | Inicio |
 | `/vender` | `operateCash` | POS: vender en el turno propio, tiquete, ventas del turno |
+| `/devoluciones` | `operateCash` | Buscar un tiquete por número, devolver por línea, comprobante |
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
 | `/catalogo` | `manageCatalog` | Catálogo (provisional) |
@@ -96,7 +97,12 @@ Rutas actuales (`src/router.tsx`):
   - **F2 cobra** desde cualquier parte de la página y **Esc vuelve al buscador**. Esc nunca vacía el carrito, porque es demasiado fácil de presionar por error; vaciar es un botón.
   - Agregar tarjeta, Nequi o transferencia propone por defecto lo que falta, y "Exacto" llena el efectivo con lo justo. La casilla "Fórmula revisada" aparece solo si algún producto la requiere.
   - Cualquier cambio en la venta borra el error anterior (por ejemplo, "stock insuficiente" después de bajar la cantidad).
-- **Tiquete impreso:** `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
+- **Pantalla de devoluciones (`/devoluciones`):**
+  - Igual que Vender, exige un turno abierto propio (`RequireOwnShift`, compartido por las dos pantallas).
+  - El cajero escribe el número del tiquete y ve por línea cuánto queda por devolver. Elige la cantidad con − y + (nunca más de lo que queda) y si vuelve al inventario o se descarta, y escribe el motivo.
+  - El botón dice el monto ("Devolver $12.000"), así el cajero ve cuánto sale del cajón antes de confirmar. La lógica (`returnDraft.ts`) es pura y tiene sus propios tests.
+  - El formulario sigue visible mientras TanStack Query vuelve a pedir el tiquete (por ejemplo, al recuperar el foco de la ventana), para no perder lo que el cajero ya marcó. Solo se reinicia si cambian el tiquete o lo ya devuelto.
+- **Tiquete y comprobante impresos:** `PrintDialog` (en `components/`) muestra el tiquete o el comprobante de devolución con el botón Imprimir; los dos llevan la clase `ticket-print`. `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.
 
