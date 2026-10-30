@@ -145,8 +145,24 @@ El tiquete (`SaleDto`) trae por línea `ReturnedQuantity` (lo ya devuelto), y se
 
 **Endpoints** (política `OperateCash`): `GET /api/sales/by-number/{number}` busca el tiquete (una ruta propia, porque `GET /api/sales?cashSessionId=` devuelve una lista y este un solo tiquete o 404); `POST /api/sale-returns` devuelve y responde 201 con el **comprobante completo**, igual que la venta con su tiquete; `GET /api/sale-returns/{id}` lo devuelve para reimprimirlo. El destino de cada línea viaja como texto (`"Restock"` o `"Discard"`).
 
+## Fiado
+
+Ver [ADR 0010](adr/0010-fiado-con-cuenta-cupo-y-abonos.md).
+
+**`CreditAccount` es la cuenta de fiado de un cliente de confianza**, como el cuaderno del mostrador. El dueño la abre con un **cupo**. Guarda el **saldo** y cada cambio queda en un `CreditEntry` (fiado, abono o devolución) con el saldo resultante: el mismo patrón del lote y su kardex.
+- **`Charge`:** la parte de una venta que se fía. No puede pasarse del cupo; el mensaje dice cuánto hay disponible. Una cuenta suspendida (`Suspend`) no recibe fiados.
+- **`ReceivePayment`:** un abono, que no puede superar la deuda (no hay saldo a favor). Una cuenta suspendida sí recibe abonos.
+- **`CreditReturn`:** una devolución de algo fiado baja la deuda en vez de entregar efectivo.
+- **`ChangeLimit`:** se puede bajar el cupo por debajo de la deuda; solo frena los fiados nuevos.
+- **`DebtSince`:** desde cuándo el cliente debe sin interrupción. Empieza con la primera deuda y se borra cuando paga todo.
+
+**`CreditPayment` es el abono**, con su propio consecutivo y comprobante: va al saldo del cliente, no a un tiquete; se paga en efectivo, tarjeta, billetera o transferencia (nunca fiado), y lo recibe el cajero en su turno.
+
+**`PaymentMethod.Credit` (fiado)** ya existe, pero la venta lo rechaza hasta que se conecte con la cuenta del cliente (paso 5b): sin eso, un pago "fiado" sería una venta gratis.
+
 **Pendiente en próximos pasos:**
-- el fiado, con cuentas por cobrar y abonos.
+- el fiado en la venta y la devolución que descuenta de la deuda (5b);
+- los casos de uso, la persistencia, los endpoints y las pantallas.
 
 ## Colombia en el código
 

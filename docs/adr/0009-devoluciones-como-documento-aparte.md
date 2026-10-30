@@ -1,6 +1,6 @@
 # 0009. Devoluciones como documento aparte, con reintegro en efectivo y reingreso al lote
 
-- **Estado:** Aceptada
+- **Estado:** Aceptada; modificada por [0010](0010-fiado-con-cuenta-cupo-y-abonos.md) en el reintegro de una venta fiada
 - **Fecha:** 2026-10-29
 
 ## Contexto

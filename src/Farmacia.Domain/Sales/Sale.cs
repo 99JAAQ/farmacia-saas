@@ -140,6 +140,10 @@ public class Sale : TenantEntity
         if (payments.Any(p => !Enum.IsDefined(p.Method)))
             throw new DomainException("El medio de pago no es válido.");
 
+        // Credit needs the customer's account to charge (next step); until then, a credit payment would be a free sale.
+        if (payments.Any(p => p.Method == PaymentMethod.Credit))
+            throw new DomainException("El fiado todavía no está disponible en la venta.");
+
         if (payments.Any(p => p.Amount <= 0))
             throw new DomainException("Cada pago debe ser mayor que cero.");
 

@@ -204,6 +204,7 @@ public class SaleTests
         { [new PaymentLine(PaymentMethod.Cash, 6_000m), new PaymentLine(PaymentMethod.Cash, 6_000m)] },  // two cash payments
         { [new PaymentLine(PaymentMethod.Card, 0m), new PaymentLine(PaymentMethod.Cash, 12_000m)] },     // zero payment
         { [new PaymentLine((PaymentMethod)99, 12_000m)] },                               // unknown method
+        { [new PaymentLine(PaymentMethod.Credit, 12_000m)] },                            // credit without an account
     };
 
     [Theory]

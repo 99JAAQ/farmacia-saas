@@ -12,4 +12,7 @@ public enum PaymentMethod
     DigitalWallet = 3,
 
     BankTransfer = 4,
+
+    /// <summary>"Fiado": charged to the customer's credit account, paid later with "abonos".</summary>
+    Credit = 5,
 }

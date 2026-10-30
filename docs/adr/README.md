@@ -12,7 +12,8 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0006](0006-jwt-propio-y-refresh-en-cookie.md) | JWT propio con refresh token rotado en cookie HttpOnly | Aceptada |
 | [0007](0007-lotes-kardex-y-fefo.md) | Stock por lote como agregado aparte, con kardex y FEFO | Aceptada |
 | [0008](0008-caja-por-turnos-con-conteo-a-ciegas.md) | Caja por turnos con un solo turno abierto y conteo a ciegas | Aceptada |
-| [0009](0009-devoluciones-como-documento-aparte.md) | Devoluciones como documento aparte, con reintegro en efectivo y reingreso al lote | Aceptada |
+| [0009](0009-devoluciones-como-documento-aparte.md) | Devoluciones como documento aparte, con reintegro en efectivo y reingreso al lote | Aceptada; modificada por 0010 |
+| [0010](0010-fiado-con-cuenta-cupo-y-abonos.md) | Fiado con cuenta por cliente, cupo y abonos al saldo | Aceptada |
 
 ## Cómo escribir uno nuevo
 

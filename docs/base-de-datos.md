@@ -250,7 +250,7 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 | `Customers.DocumentType` | Códigos DIAN: 12 = TI, 13 = CC, 22 = CE, 31 = NIT, 41 = Pasaporte, 47 = PEP, 48 = PPT |
 | `CashSessions.Status` | 1 = Abierto, 2 = Cerrado |
 | `CashMovements.Type` | 1 = Ingreso, 2 = Egreso |
-| `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia |
+| `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia, 5 = Fiado |
 | `Products.VatRate`, `SaleItems.VatRate` | Igual que `PurchaseItems.VatRate`: el valor es el porcentaje |
 | `SaleReturnItems.Disposition` | 1 = Vuelve al inventario, 2 = Se descarta |
 | `DocumentCounters.Document` | 1 = Tiquete de venta, 2 = Devolución |
