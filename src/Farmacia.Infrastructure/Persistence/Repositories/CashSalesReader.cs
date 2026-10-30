@@ -6,8 +6,8 @@ namespace Farmacia.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// The cash a shift's sales left in the drawer: the cash payments' amount applied to each sale (what the customer
-/// handed over minus the change), minus the refunds paid in that shift (returns of sales from any shift: the money
-/// leaves this drawer).
+/// handed over minus the change), minus the cash refunded in that shift (returns of sales from any shift: the money
+/// leaves this drawer). What a return credited to a customer's debt never left the drawer.
 /// </summary>
 internal sealed class CashSalesReader(FarmaciaDbContext db) : ICashSalesReader
 {
@@ -19,12 +19,14 @@ internal sealed class CashSalesReader(FarmaciaDbContext db) : ICashSalesReader
             .Where(p => p.Method == PaymentMethod.Cash)
             .SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
 
-        // Refund is computed (quantity × price), so the sum is written over the items' stored columns.
-        var refunded = await db.SaleReturns
-            .Where(r => r.PharmacyId == pharmacyId && r.CashSessionId == cashSessionId)
+        // CashRefund is computed (items' quantity × price, minus what went to the debt), so the sum is written over the
+        // stored columns.
+        var returns = db.SaleReturns.Where(r => r.PharmacyId == pharmacyId && r.CashSessionId == cashSessionId);
+        var refunded = await returns
             .SelectMany(r => r.Items)
             .SumAsync(i => (decimal?)(i.Quantity * i.UnitPrice), cancellationToken) ?? 0m;
+        var creditedToDebt = await returns.SumAsync(r => (decimal?)r.CreditedToAccount, cancellationToken) ?? 0m;
 
-        return received - refunded;
+        return received - (refunded - creditedToDebt);
     }
 }

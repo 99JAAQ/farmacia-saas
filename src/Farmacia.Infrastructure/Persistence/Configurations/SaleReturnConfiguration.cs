@@ -20,6 +20,7 @@ public class SaleReturnConfiguration : IEntityTypeConfiguration<SaleReturn>
         builder.HasIndex(r => new { r.PharmacyId, r.CashSessionId });
 
         builder.Property(r => r.Reason).HasMaxLength(200);
+        builder.Property(r => r.CreditedToAccount).HasPrecision(18, 2);
 
         builder.HasOne<Sale>().WithMany().HasForeignKey(r => r.SaleId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<CashSession>().WithMany().HasForeignKey(r => r.CashSessionId).OnDelete(DeleteBehavior.Restrict);

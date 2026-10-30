@@ -1,4 +1,5 @@
 using Farmacia.Domain.Cash;
+using Farmacia.Domain.Customers;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
@@ -19,6 +20,10 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         // The shift's sales: its cash when closing, the list of tickets.
         builder.HasIndex(s => new { s.PharmacyId, s.CashSessionId });
         builder.HasIndex(s => new { s.PharmacyId, s.SoldAt });
+
+        // A customer's purchases (credit statement, history).
+        builder.HasIndex(s => new { s.PharmacyId, s.CustomerId });
+        builder.HasOne<Customer>().WithMany().HasForeignKey(s => s.CustomerId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<CashSession>().WithMany().HasForeignKey(s => s.CashSessionId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(s => s.SoldBy).OnDelete(DeleteBehavior.Restrict);

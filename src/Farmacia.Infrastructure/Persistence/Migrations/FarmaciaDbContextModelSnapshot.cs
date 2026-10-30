@@ -550,6 +550,9 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CashSessionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<long>("Number")
                         .HasColumnType("bigint");
 
@@ -572,11 +575,15 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CashSessionId");
 
+                    b.HasIndex("CustomerId");
+
                     b.HasIndex("PrescriptionCheckedBy");
 
                     b.HasIndex("SoldBy");
 
                     b.HasIndex("PharmacyId", "CashSessionId");
+
+                    b.HasIndex("PharmacyId", "CustomerId");
 
                     b.HasIndex("PharmacyId", "Number")
                         .IsUnique();
@@ -671,6 +678,10 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("CashSessionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CreditedToAccount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<long>("Number")
                         .HasColumnType("bigint");
@@ -1289,6 +1300,11 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CashSessionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
                         .WithMany()

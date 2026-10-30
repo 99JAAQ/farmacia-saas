@@ -25,6 +25,7 @@ erDiagram
     Sales ||--|{ Payments : "pagos"
     SaleItems ||--|{ SaleItemBatches : "salió de"
     Batches ||--o{ SaleItemBatches : ""
+    Customers ||--o{ Sales : "compras (fiado)"
     Sales ||--o{ SaleReturns : "devoluciones"
     CashSessions ||--o{ SaleReturns : "reintegros del turno"
     SaleReturns ||--|{ SaleReturnItems : "líneas"
@@ -138,6 +139,7 @@ erDiagram
         guid Id PK
         bigint Number UK "tiquete, único por farmacia"
         guid CashSessionId FK
+        guid CustomerId FK "si tiene cliente (siempre si fía)"
         guid SoldBy FK
         datetimeoffset SoldAt
         guid PrescriptionCheckedBy FK "si llevaba fórmula"
@@ -175,6 +177,7 @@ erDiagram
         guid ReturnedBy FK
         datetimeoffset ReturnedAt
         string Reason
+        decimal CreditedToAccount "descontado de la deuda; el resto fue en efectivo"
     }
     SaleReturnItems {
         guid Id PK
@@ -206,7 +209,7 @@ erDiagram
     }
 ```
 
-`Customers` todavía no tiene relaciones: se usará en las ventas (cliente opcional) y en el fiado.
+`Customers` se relaciona con las ventas (cliente opcional, obligatorio si se fía). Las cuentas de fiado y los abonos llegan en el paso 5c.
 
 ## Convenciones del esquema
 
@@ -289,6 +292,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddCashSessions` | Turnos de caja y movimientos |
 | `AddSales` | Ventas, líneas, lotes de cada línea, pagos, contador de tiquetes y `Products.VatRate` |
 | `AddSaleReturns` | Devoluciones con sus líneas y lotes; `SaleCounters` pasa a `DocumentCounters` (editada a mano: copia los números de tiquete antes de borrar la tabla vieja, y al revés en `Down`) |
+| `AddCustomerAndCreditToSales` | `Sales.CustomerId` (el cliente de una venta fiada) y `SaleReturns.CreditedToAccount` (lo que una devolución descontó de la deuda) |
 
 Comandos (desde la raíz del repo):
 

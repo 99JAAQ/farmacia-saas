@@ -158,10 +158,11 @@ Ver [ADR 0010](adr/0010-fiado-con-cuenta-cupo-y-abonos.md).
 
 **`CreditPayment` es el abono**, con su propio consecutivo y comprobante: va al saldo del cliente, no a un tiquete; se paga en efectivo, tarjeta, billetera o transferencia (nunca fiado), y lo recibe el cajero en su turno.
 
-**`PaymentMethod.Credit` (fiado)** ya existe, pero la venta lo rechaza hasta que se conecte con la cuenta del cliente (paso 5b): sin eso, un pago "fiado" sería una venta gratis.
+**El fiado en la venta (`PaymentMethod.Credit`):** `Sale.Register` recibe la cuenta del cliente y guarda su `CustomerId`. Como la tarjeta, el fiado paga un monto exacto, en un solo pago y sin superar el total. **El cupo se verifica con los pagos, antes de tocar el stock** (`EnsureCanCharge`), y la deuda sube solo al final (`Charge`): si algo falla, ni los lotes ni la cuenta cambian. Sin la cuenta, un pago "fiado" se rechaza (sería una venta gratis).
+
+**El fiado en la devolución:** lo que se fió no se devuelve en efectivo. `SaleReturn.Register` descuenta de la deuda lo **menor** entre el reintegro, lo fiado en ese tiquete que aún no se ha descontado (otras devoluciones del mismo tiquete pudieron descontar ya) y la deuda actual. El resto es efectivo. Si el cliente ya había pagado la deuda con abonos, recibe efectivo, porque esa plata sí la puso. La devolución guarda `CreditedToAccount` y `CashRefund`, y **la caja resta solo el `CashRefund`**.
 
 **Pendiente en próximos pasos:**
-- el fiado en la venta y la devolución que descuenta de la deuda (5b);
 - los casos de uso, la persistencia, los endpoints y las pantallas.
 
 ## Colombia en el código

@@ -1,4 +1,5 @@
 using Farmacia.Domain.Common;
+using Farmacia.Domain.Credit;
 using Farmacia.Domain.Inventory;
 
 namespace Farmacia.Domain.Sales;
@@ -17,9 +18,10 @@ public enum ReturnDisposition
 public sealed record ReturnLine(Guid SaleItemId, int Quantity, ReturnDisposition Disposition);
 
 /// <summary>
-/// Aggregate root: a customer brings back part or all of a sale and gets the money back in cash. The sale itself is
-/// never changed (a ticket is a closed document): what is left to return is the sale minus its earlier returns.
-/// The cash comes out of the shift of whoever makes the return (the sale's shift is usually closed by then).
+/// Aggregate root: a customer brings back part or all of a sale and gets the money back. The sale itself is never
+/// changed (a ticket is a closed document): what is left to return is the sale minus its earlier returns.
+/// If part of the sale was on credit, the refund first lowers the customer's debt (ADR 0010); the rest is cash, out
+/// of the shift of whoever makes the return (the sale's shift is usually closed by then).
 /// </summary>
 public class SaleReturn : TenantEntity
 {
@@ -40,8 +42,14 @@ public class SaleReturn : TenantEntity
 
     public IReadOnlyCollection<SaleReturnItem> Items => _items.AsReadOnly();
 
-    /// <summary>Cash given back: what the customer paid for the returned units (VAT included).</summary>
+    /// <summary>What the returned units were worth (VAT included): the debt lowered plus the cash given back.</summary>
     public decimal Refund => _items.Sum(i => i.Refund);
+
+    /// <summary>The part of the refund that lowered the customer's credit debt instead of being paid in cash.</summary>
+    public decimal CreditedToAccount { get; private set; }
+
+    /// <summary>The cash that leaves the drawer.</summary>
+    public decimal CashRefund => Refund - CreditedToAccount;
 
     /// <summary>
     /// Registers the return. Checks every line first (it belongs to the ticket, it was not returned already, its batch
@@ -51,12 +59,17 @@ public class SaleReturn : TenantEntity
     /// <param name="previousReturns">The sale's earlier returns: together they cannot return more than was sold.</param>
     /// <param name="batches">The batches the returned lines were sold from.</param>
     /// <param name="returnedAt">Local Colombian time.</param>
+    /// <param name="creditAccount">The customer's account, required when part of the sale was on credit.</param>
     public static SaleReturn Register(
         long number, Sale sale, IReadOnlyList<SaleReturn> previousReturns, Guid cashSessionId, Guid returnedBy,
-        DateTimeOffset returnedAt, string reason, IReadOnlyList<ReturnLine> lines, IReadOnlyList<Batch> batches)
+        DateTimeOffset returnedAt, string reason, IReadOnlyList<ReturnLine> lines, IReadOnlyList<Batch> batches,
+        CreditAccount? creditAccount = null)
     {
         if (previousReturns.Any(r => r.SaleId != sale.Id))
             throw new ArgumentException("The previous returns must be of the same sale.", nameof(previousReturns));
+
+        if (sale.CreditAmount > 0 && (creditAccount is null || creditAccount.CustomerId != sale.CustomerId))
+            throw new ArgumentException("A sale with credit needs its customer's account to be returned.", nameof(creditAccount));
 
         if (number <= 0)
             throw new DomainException("El número de la devolución debe ser mayor que cero.");
@@ -116,6 +129,17 @@ public class SaleReturn : TenantEntity
         {
             batch.Restock(quantity, returnedAt, saleReturn.Id);
             item.PutBackInto(batch.Id, quantity, batch.UnitCost);
+        }
+
+        // What was taken on credit is not given back in cash: it lowers the debt, up to what this ticket put on credit
+        // (minus what earlier returns already lowered) and never below zero. If the customer already paid it off with
+        // "abonos", that money was really paid, so it comes back in cash.
+        var creditLeft = sale.CreditAmount - previousReturns.Sum(r => r.CreditedToAccount);
+        var credited = Math.Min(saleReturn.Refund, Math.Min(creditLeft, creditAccount?.Balance ?? 0));
+        if (credited > 0)
+        {
+            creditAccount!.CreditReturn(credited, returnedAt, saleReturn.Id);
+            saleReturn.CreditedToAccount = credited;
         }
 
         return saleReturn;

@@ -1,4 +1,5 @@
 using Farmacia.Domain.Common;
+using Farmacia.Domain.Credit;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Products;
 
@@ -28,6 +29,10 @@ public class Sale : TenantEntity
     public long Number { get; private init; }
 
     public Guid CashSessionId { get; private init; }
+
+    /// <summary>The customer, when the sale has one (always when part of it is on credit).</summary>
+    public Guid? CustomerId { get; private init; }
+
     public Guid SoldBy { get; private init; }
     public DateTimeOffset SoldAt { get; private init; }
 
@@ -46,6 +51,9 @@ public class Sale : TenantEntity
 
     public decimal Change => _payments.Sum(p => p.Change);
 
+    /// <summary>The part taken on credit ("fiado"), charged to the customer's account.</summary>
+    public decimal CreditAmount => _payments.Where(p => p.Method == PaymentMethod.Credit).Sum(p => p.Amount);
+
     /// <summary>
     /// Registers the sale. Checks everything first (stock of every product, prescription, payments) and only then
     /// takes the stock, so a failure leaves every batch untouched. The caller saves the sale and the batches
@@ -53,10 +61,15 @@ public class Sale : TenantEntity
     /// </summary>
     /// <param name="prescriptionChecked">The cashier ticked "Fórmula revisada".</param>
     /// <param name="soldAt">Local Colombian time.</param>
+    /// <param name="creditAccount">The customer's account, required when part of the sale is on credit.</param>
     public static Sale Register(
         Guid pharmacyId, long number, Guid cashSessionId, Guid soldBy, DateTimeOffset soldAt,
-        IReadOnlyList<SaleLine> lines, IReadOnlyList<PaymentLine> payments, bool prescriptionChecked)
+        IReadOnlyList<SaleLine> lines, IReadOnlyList<PaymentLine> payments, bool prescriptionChecked,
+        CreditAccount? creditAccount = null)
     {
+        if (creditAccount is not null && creditAccount.PharmacyId != pharmacyId)
+            throw new ArgumentException("The credit account must be of the same pharmacy.", nameof(creditAccount));
+
         if (number <= 0)
             throw new DomainException("El número del tiquete debe ser mayor que cero.");
 
@@ -76,13 +89,14 @@ public class Sale : TenantEntity
             CashSessionId = cashSessionId,
             SoldBy = soldBy,
             SoldAt = soldAt,
+            CustomerId = creditAccount?.CustomerId,
             PrescriptionCheckedBy = needsPrescription ? soldBy : null,
             PrescriptionCheckedAt = needsPrescription ? soldAt : null,
         };
 
         var priced = lines.Select(sale.Price).ToList();
         EnsureStock(priced, DateOf(soldAt));
-        sale.AddPayments(payments);
+        sale.AddPayments(payments, creditAccount);
 
         // Everything is valid: now take the stock, line by line (lines of the same product see what the previous took).
         foreach (var (line, item) in priced)
@@ -91,6 +105,10 @@ public class Sale : TenantEntity
                 allocation.Batch.Sell(allocation.Quantity, soldAt, sale.Id);
                 item.TakeFrom(allocation.Batch.Id, allocation.Quantity, allocation.Batch.UnitCost);
             }
+
+        // The limit was checked with the payments; the debt goes up only now, with everything else valid.
+        if (sale.CreditAmount > 0)
+            creditAccount!.Charge(sale.CreditAmount, soldAt, sale.Id);
 
         return sale;
     }
@@ -132,17 +150,14 @@ public class Sale : TenantEntity
     }
 
     /// <summary>
-    /// Card, wallet and transfer pay their exact amount and cannot go over the total (nobody gives change on a
-    /// transfer). Cash covers the rest: what the customer hands over minus that rest is the change.
+    /// Card, wallet, transfer and credit pay their exact amount and cannot go over the total (nobody gives change on
+    /// a transfer). Cash covers the rest: what the customer hands over minus that rest is the change. Credit needs the
+    /// customer's account, and is checked against its limit here, before any stock is taken.
     /// </summary>
-    private void AddPayments(IReadOnlyList<PaymentLine> payments)
+    private void AddPayments(IReadOnlyList<PaymentLine> payments, CreditAccount? creditAccount)
     {
         if (payments.Any(p => !Enum.IsDefined(p.Method)))
             throw new DomainException("El medio de pago no es válido.");
-
-        // Credit needs the customer's account to charge (next step); until then, a credit payment would be a free sale.
-        if (payments.Any(p => p.Method == PaymentMethod.Credit))
-            throw new DomainException("El fiado todavía no está disponible en la venta.");
 
         if (payments.Any(p => p.Amount <= 0))
             throw new DomainException("Cada pago debe ser mayor que cero.");
@@ -151,13 +166,26 @@ public class Sale : TenantEntity
         if (cash.Count > 1)
             throw new DomainException("Registre el efectivo en un solo pago.");
 
+        var credit = payments.Where(p => p.Method == PaymentMethod.Credit).ToList();
+        if (credit.Count > 1)
+            throw new DomainException("Registre el fiado en un solo pago.");
+
+        if (credit.Count == 1)
+        {
+            // Without the account, a "credit" payment would be a free sale.
+            if (creditAccount is null)
+                throw new DomainException("Para fiar, elija un cliente con cupo de fiado.");
+
+            creditAccount.EnsureCanCharge(credit[0].Amount);
+        }
+
         var total = Total;
         var nonCash = payments.Where(p => p.Method != PaymentMethod.Cash).ToList();
         var nonCashTotal = nonCash.Sum(p => p.Amount);
 
         if (nonCashTotal > total)
             throw new DomainException(
-                $"Los pagos con tarjeta, billetera o transferencia ({Money.Format(nonCashTotal)}) superan el total ({Money.Format(total)}).");
+                $"Los pagos que no son en efectivo ({Money.Format(nonCashTotal)}) superan el total ({Money.Format(total)}).");
 
         var cashDue = total - nonCashTotal;
 
