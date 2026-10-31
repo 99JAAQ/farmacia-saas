@@ -62,6 +62,7 @@ erDiagram
         string BaseUnitName "p. ej. Tableta"
         bool RequiresPrescription
         int VatRate "0, 5 o 19 (IVA incluido en el precio)"
+        bool IsActive "inactivo = descontinuado; no se borra"
     }
     SaleUnits {
         guid Id PK
@@ -327,6 +328,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddSaleReturns` | Devoluciones con sus líneas y lotes; `SaleCounters` pasa a `DocumentCounters` (editada a mano: copia los números de tiquete antes de borrar la tabla vieja, y al revés en `Down`) |
 | `AddCustomerAndCreditToSales` | `Sales.CustomerId` (el cliente de una venta fiada) y `SaleReturns.CreditedToAccount` (lo que una devolución descontó de la deuda) |
 | `AddCreditAccounts` | Cuentas de fiado, sus movimientos y los abonos |
+| `AddProductIsActive` | `Products.IsActive` (editada a mano: `defaultValue: true`, para no desactivar los productos existentes) |
 
 Comandos (desde la raíz del repo):
 

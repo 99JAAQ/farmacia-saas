@@ -32,6 +32,11 @@ Un producto (p. ej. "Acetaminofén 500 mg") tiene una unidad base ("Tableta") y 
 
 **El stock siempre se guarda en unidades base.** Vender una caja descuenta 30 tabletas; vender un blíster, 10. Así se puede vender fraccionado sin manejar "media caja".
 
+**Mantener el catálogo** (ver [ADR 0011](adr/0011-catalogo-desactivar-y-precio-actual.md)):
+- `UpdateDetails` corrige los datos del producto (nombre, unidad base, principio activo, fórmula, registro sanitario, categoría, IVA).
+- `UpdateSaleUnit` cambia una presentación: nombre, factor, precio y código de barras. El nombre y el código siguen siendo únicos dentro del producto (sin compararse consigo misma), y entre productos los protege el índice único de la base. Un precio nuevo aplica solo a las ventas siguientes, porque cada venta copió el suyo; un factor nuevo no altera el stock, porque está en unidades base.
+- `Deactivate`/`Activate`: un producto descontinuado se desactiva, nunca se borra, porque lotes y ventas lo referencian. Inactivo, la venta lo rechaza.
+
 ## Inventario: lotes y kardex
 
 - **Cada entrada de mercancía crea un `Batch`** con su número de lote, vencimiento, cantidad y costo por unidad base.

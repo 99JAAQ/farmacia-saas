@@ -118,7 +118,7 @@ cd web && npm test                                # frontend
 |---|---|
 | La API no arranca: "Connection string 'Farmacia' is missing" | Falta el user-secret de la cadena de conexión (paso 2). |
 | La API no arranca: error en las opciones de `Jwt` | Falta la clave de firma, es muy corta o es degenerada. Genérela de nuevo (paso 2). |
-| Error SQL 258 o timeout al conectar | El contenedor está detenido: `docker compose up -d`. |
+| Error SQL 258 o timeout al conectar | El contenedor está detenido: `docker compose up -d`. Tiene `restart: unless-stopped`, así que Docker lo vuelve a levantar solo después de reiniciarse; si se creó antes de ese cambio, aplíquelo con `docker update --restart unless-stopped farmacia-sqlserver`. |
 | `PendingModelChangesWarning` | Cambió el modelo y falta la migración ([cómo crearla](base-de-datos.md#migraciones)). |
 | curl con tildes devuelve 400 en Git Bash | Git Bash envía el texto en otra codificación. Guarde el JSON en un archivo UTF-8 y use `--data-binary @archivo.json`. |
 | `docker exec` con rutas falla en Git Bash | Git Bash reescribe las rutas. Anteponga `MSYS_NO_PATHCONV=1`. |

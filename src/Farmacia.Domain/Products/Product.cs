@@ -28,6 +28,12 @@ public class Product : TenantEntity
     // Referenced by Id only: Category is a separate aggregate.
     public Guid? CategoryId { get; private set; }
 
+    /// <summary>
+    /// A discontinued product is deactivated, never deleted: its sales, batches and kardex keep pointing to it.
+    /// Inactive, it is neither sold nor bought; it can be reactivated.
+    /// </summary>
+    public bool IsActive { get; private set; } = true;
+
     public IReadOnlyCollection<SaleUnit> SaleUnits => _saleUnits.AsReadOnly();
 
     public static Product Create(
@@ -58,6 +64,35 @@ public class Product : TenantEntity
         };
     }
 
+    /// <summary>Corrects or completes the product's data. The sale units are changed one by one.</summary>
+    public void UpdateDetails(
+        string name,
+        string baseUnitName,
+        bool requiresPrescription,
+        string? activeIngredient,
+        string? concentration,
+        string? pharmaceuticalForm,
+        string? sanitaryRegistration,
+        Guid? categoryId,
+        VatRate vatRate)
+    {
+        EnsureValid(vatRate);
+
+        Name = Guard.Required(name, "El nombre del producto");
+        BaseUnitName = Guard.Required(baseUnitName, "La unidad base");
+        RequiresPrescription = requiresPrescription;
+        ActiveIngredient = Guard.Optional(activeIngredient);
+        Concentration = Guard.Optional(concentration);
+        PharmaceuticalForm = Guard.Optional(pharmaceuticalForm);
+        SanitaryRegistration = Guard.Optional(sanitaryRegistration);
+        CategoryId = categoryId;
+        VatRate = vatRate;
+    }
+
+    public void Deactivate() => IsActive = false;
+
+    public void Activate() => IsActive = true;
+
     public void ChangeCategory(Guid? categoryId) => CategoryId = categoryId;
 
     public void ChangeVatRate(VatRate vatRate)
@@ -69,15 +104,40 @@ public class Product : TenantEntity
     public SaleUnit AddSaleUnit(string name, int conversionFactor, decimal price, string? barcode = null)
     {
         var unit = new SaleUnit(PharmacyId, Id, name, conversionFactor, price, barcode);
-
-        if (_saleUnits.Any(u => string.Equals(u.Name, unit.Name, StringComparison.OrdinalIgnoreCase)))
-            throw new DomainException($"El producto ya tiene una unidad de venta llamada '{unit.Name}'.");
-
-        if (unit.Barcode is not null && _saleUnits.Any(u => u.Barcode == unit.Barcode))
-            throw new DomainException($"El código de barras '{unit.Barcode}' ya está asignado a otra unidad de venta.");
+        EnsureUnique(unit.Name, unit.Barcode, except: null);
 
         _saleUnits.Add(unit);
         return unit;
+    }
+
+    /// <summary>
+    /// Changes a presentation. A new price applies to the next sales only: every sale copied its own price. A new
+    /// factor is safe too: stock is kept in base units, and past sales copied their factor.
+    /// </summary>
+    public void UpdateSaleUnit(Guid saleUnitId, string name, int conversionFactor, decimal price, string? barcode)
+    {
+        var unit = _saleUnits.SingleOrDefault(u => u.Id == saleUnitId)
+            ?? throw new DomainException("La presentación no es de este producto.");
+
+        var (validName, validBarcode) = SaleUnit.Validate(name, conversionFactor, price, barcode);
+        EnsureUnique(validName, validBarcode, except: unit);
+
+        unit.Update(validName, conversionFactor, price, validBarcode);
+    }
+
+    /// <summary>
+    /// Within the product. Across products, the database's unique index on the barcode is the guard (one barcode,
+    /// one presentation, in the whole pharmacy).
+    /// </summary>
+    private void EnsureUnique(string name, string? barcode, SaleUnit? except)
+    {
+        var others = _saleUnits.Where(u => u != except).ToList();
+
+        if (others.Any(u => string.Equals(u.Name, name, StringComparison.OrdinalIgnoreCase)))
+            throw new DomainException($"El producto ya tiene una unidad de venta llamada '{name}'.");
+
+        if (barcode is not null && others.Any(u => u.Barcode == barcode))
+            throw new DomainException($"El código de barras '{barcode}' ya está asignado a otra unidad de venta.");
     }
 
     private static void EnsureValid(VatRate vatRate)

@@ -115,6 +115,9 @@ public class Sale : TenantEntity
 
     private (SaleLine Line, SaleItem Item) Price(SaleLine line)
     {
+        if (!line.Product.IsActive)
+            throw new DomainException($"{line.Product.Name} está inactivo: ya no se vende.");
+
         if (line.Quantity <= 0)
             throw new DomainException($"La cantidad de {line.Product.Name} debe ser mayor que cero.");
 

@@ -10,17 +10,10 @@ public class SaleUnit : TenantEntity
     internal SaleUnit(Guid pharmacyId, Guid productId, string name, int conversionFactor, decimal price, string? barcode)
         : base(pharmacyId)
     {
-        if (conversionFactor < 1)
-            throw new DomainException("El factor de conversión debe ser al menos 1.");
-
-        if (price <= 0)
-            throw new DomainException("El precio debe ser mayor que cero.");
-
         ProductId = productId;
-        Name = Guard.Required(name, "El nombre de la unidad de venta");
+        (Name, Barcode) = Validate(name, conversionFactor, price, barcode);
         ConversionFactor = conversionFactor;
         Price = price;
-        Barcode = Guard.Optional(barcode);
     }
 
     public Guid ProductId { get; private init; }
@@ -31,4 +24,25 @@ public class SaleUnit : TenantEntity
 
     public decimal Price { get; private set; }
     public string? Barcode { get; private set; }
+
+    /// <summary>The rules of a presentation, shared by creating and editing it. Returns the cleaned name and barcode.</summary>
+    internal static (string Name, string? Barcode) Validate(string name, int conversionFactor, decimal price, string? barcode)
+    {
+        if (conversionFactor < 1)
+            throw new DomainException("El factor de conversión debe ser al menos 1.");
+
+        if (price <= 0)
+            throw new DomainException("El precio debe ser mayor que cero.");
+
+        return (Guard.Required(name, "El nombre de la unidad de venta"), Guard.Optional(barcode));
+    }
+
+    /// <summary>Only through <see cref="Product.UpdateSaleUnit"/>, which validated it and checked it is unique.</summary>
+    internal void Update(string name, int conversionFactor, decimal price, string? barcode)
+    {
+        Name = name;
+        ConversionFactor = conversionFactor;
+        Price = price;
+        Barcode = barcode;
+    }
 }

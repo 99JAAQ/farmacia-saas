@@ -4,6 +4,9 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: farmacia-sqlserver
+    # Back up on its own after Docker Desktop restarts (it was found stopped with exit code 255); a manual
+    # `docker compose stop` is respected.
+    restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer

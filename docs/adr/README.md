@@ -14,6 +14,7 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0008](0008-caja-por-turnos-con-conteo-a-ciegas.md) | Caja por turnos con un solo turno abierto y conteo a ciegas | Aceptada |
 | [0009](0009-devoluciones-como-documento-aparte.md) | Devoluciones como documento aparte, con reintegro en efectivo y reingreso al lote | Aceptada; modificada por 0010 |
 | [0010](0010-fiado-con-cuenta-cupo-y-abonos.md) | Fiado con cuenta por cliente, cupo y abonos al saldo | Aceptada |
+| [0011](0011-catalogo-desactivar-y-precio-actual.md) | Catálogo: los productos se desactivan, no se borran, y solo se guarda el precio actual | Aceptada |
 
 ## Cómo escribir uno nuevo
 
