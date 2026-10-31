@@ -120,7 +120,8 @@ web/
     │   ├── purchases/       → pantallas de compras
     │   ├── cash/            → pantalla de caja
     │   ├── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
-    │   └── returns/         → devoluciones: borrador (lógica pura), pantalla, comprobante
+    │   ├── returns/         → devoluciones: borrador (lógica pura), pantalla, comprobante
+    │   └── customers/       → clientes y fiado: búsqueda, deudores, cupo, movimientos
     ├── lib/
     │   ├── api/http.ts      → cliente HTTP (token en memoria, refresh único)
     │   ├── format.ts        → dinero, fechas y horas en formato colombiano

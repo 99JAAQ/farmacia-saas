@@ -36,6 +36,12 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('StockKeeper'), 'operateCash')).toBe(false)
   })
 
+  it('lets only the owner give credit: the cashier sells on credit but never decides who gets it', () => {
+    expect(can(userWith('Owner'), 'manageCredit')).toBe(true)
+    expect(can(userWith('Cashier'), 'manageCredit')).toBe(false)
+    expect(can(userWith('StockKeeper'), 'manageCredit')).toBe(false)
+  })
+
   it('does not let the cashier or an anonymous visitor manage the catalog', () => {
     expect(can(userWith('Cashier'), 'manageCatalog')).toBe(false)
     expect(can(null, 'manageCatalog')).toBe(false)

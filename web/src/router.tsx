@@ -4,6 +4,8 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { CashPage } from '@/features/cash/CashPage'
+import { CustomerDetailPage } from '@/features/customers/CustomerDetailPage'
+import { CustomersPage } from '@/features/customers/CustomersPage'
 import { NewPurchasePage } from '@/features/purchases/NewPurchasePage'
 import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
 import { PurchasesPage } from '@/features/purchases/PurchasesPage'
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
               { path: 'caja', element: <CashPage /> },
               { path: 'vender', element: <SellPage /> },
               { path: 'devoluciones', element: <ReturnsPage /> },
+              { path: 'clientes', element: <CustomersPage /> },
+              { path: 'clientes/:id', element: <CustomerDetailPage /> },
             ],
           },
           {

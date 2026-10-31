@@ -41,6 +41,8 @@ features/cash/
 
 ## Cliente HTTP (`src/lib/api/http.ts`)
 
+- **Una respuesta sin cuerpo es válida con cualquier código de éxito**, no solo con 204: por ejemplo, habilitar el fiado responde 201 con solo el encabezado `Location`.
+
 Todas las llamadas pasan por `api<T>(url, options)`, que:
 
 - **Agrega el access token**, que vive **solo en la memoria** del módulo.
@@ -64,6 +66,7 @@ Rutas actuales (`src/router.tsx`):
 | `/` | Autenticado | Inicio |
 | `/vender` | `operateCash` | POS: vender en el turno propio, tiquete, ventas del turno |
 | `/devoluciones` | `operateCash` | Buscar un tiquete por número, devolver por línea, comprobante |
+| `/clientes`, `/clientes/:id` | `operateCash` (administrar: `manageCredit`) | Clientes y fiado: búsqueda, quién debe, cupo, suspender, movimientos |
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
 | `/catalogo` | `manageCatalog` | Catálogo (provisional) |
@@ -102,6 +105,11 @@ Rutas actuales (`src/router.tsx`):
   - El cajero escribe el número del tiquete y ve por línea cuánto queda por devolver. Elige la cantidad con − y + (nunca más de lo que queda) y si vuelve al inventario o se descarta, y escribe el motivo.
   - El botón dice el monto ("Devolver $12.000"), así el cajero ve cuánto sale del cajón antes de confirmar. La lógica (`returnDraft.ts`) es pura y tiene sus propios tests.
   - El formulario sigue visible mientras TanStack Query vuelve a pedir el tiquete (por ejemplo, al recuperar el foco de la ventana), para no perder lo que el cajero ya marcó. Solo se reinicia si cambian el tiquete o lo ya devuelto.
+- **Clientes y fiado (`/clientes`):**
+  - Todos en la caja pueden buscar clientes y ver lo que deben, pero solo el dueño (`manageCredit`) ve "Nuevo cliente", la pestaña "Quién debe" y los controles del fiado (habilitar con un cupo, cambiar el cupo, suspender o reanudar). Al cajero se le explica que se lo pida al dueño. La API hace cumplir lo mismo.
+  - El estado del fiado se resume en palabras con `describeCredit` ("Debe $12.000 hace 3 días", "Al día", "Suspendido"), y una deuda de más de 30 días se marca como aviso (`warning`).
+  - Un cliente con NIT se registra como un proveedor: se escribe sin el dígito de verificación y la pantalla lo calcula en vivo.
+  - Cada cambio invalida todas las consultas `['customers', …]` (cliente, movimientos, búsqueda y deudores), así nada queda desactualizado.
 - **Tiquete y comprobante impresos:** `PrintDialog` (en `components/`) muestra el tiquete o el comprobante de devolución con el botón Imprimir; los dos llevan la clase `ticket-print`. `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.

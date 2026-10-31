@@ -83,7 +83,9 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   if (!response.ok) throw await toApiError(response)
 
-  return (response.status === 204 ? undefined : await response.json()) as T
+  // No body is a valid answer, not only with 204: e.g. a 201 that only sends a Location header.
+  const text = await response.text()
+  return (text === '' ? undefined : JSON.parse(text)) as T
 }
 
 async function send(path: string, { method = 'GET', body, signal }: RequestOptions): Promise<Response> {

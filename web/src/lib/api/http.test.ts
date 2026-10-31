@@ -36,6 +36,12 @@ describe('api', () => {
   beforeEach(() => setSession(null))
   afterEach(() => vi.unstubAllGlobals())
 
+  it('an answer without a body is fine with any success status, not only 204', async () => {
+    mockFetch(() => json(201))
+
+    await expect(api<void>('/api/customers/1/credit', { method: 'POST' })).resolves.toBeUndefined()
+  })
+
   it('sends the access token as a Bearer header', async () => {
     setSession(session('token-1'))
     const fetchMock = mockFetch(() => json(200, { ok: true }))
