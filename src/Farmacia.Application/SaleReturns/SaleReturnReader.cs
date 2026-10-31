@@ -24,6 +24,8 @@ public sealed class SaleReturnReader(IProductRepository products, IUserReader us
             names.GetValueOrDefault(saleReturn.ReturnedBy, "Usuario desconocido"),
             saleReturn.Reason,
             saleReturn.Refund,
+            saleReturn.CreditedToAccount,
+            saleReturn.CashRefund,
             saleReturn.Items
                 .Select(item =>
                 {

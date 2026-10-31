@@ -2,6 +2,8 @@ using Farmacia.Application.Abstractions;
 using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Domain.Cash;
 using Farmacia.Domain.Common;
+using Farmacia.Domain.Credit;
+using Farmacia.Domain.Customers;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
@@ -264,4 +266,34 @@ public sealed class InMemorySaleReturnRepository : ISaleReturnRepository
             .ToList());
 
     public void Add(SaleReturn saleReturn) => Items.Add(saleReturn);
+}
+
+public sealed class InMemoryCustomerRepository : ICustomerRepository
+{
+    public List<Customer> Items { get; } = [];
+
+    public Task<Customer?> GetByIdAsync(Guid pharmacyId, Guid customerId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(c => c.PharmacyId == pharmacyId && c.Id == customerId));
+
+    public void Add(Customer customer) => Items.Add(customer);
+}
+
+public sealed class InMemoryCreditAccountRepository : ICreditAccountRepository
+{
+    public List<CreditAccount> Items { get; } = [];
+
+    public Task<CreditAccount?> GetByCustomerAsync(Guid pharmacyId, Guid customerId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(a => a.PharmacyId == pharmacyId && a.CustomerId == customerId));
+
+    public void Add(CreditAccount account) => Items.Add(account);
+}
+
+public sealed class InMemoryCreditPaymentRepository : ICreditPaymentRepository
+{
+    public List<CreditPayment> Items { get; } = [];
+
+    public Task<CreditPayment?> GetByIdAsync(Guid pharmacyId, Guid creditPaymentId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(p => p.PharmacyId == pharmacyId && p.Id == creditPaymentId));
+
+    public void Add(CreditPayment payment) => Items.Add(payment);
 }

@@ -11,10 +11,12 @@ namespace Farmacia.Application.Sales.RegisterSale;
 /// "Cobrar": the whole cart at once. Prices are never sent: they come from the catalog.
 /// </summary>
 /// <param name="PrescriptionChecked">The cashier ticked "Fórmula revisada" (required if a product needs one).</param>
+/// <param name="CustomerId">Required to take part of the sale on credit ("fiado"): the customer with a credit account.</param>
 public sealed record RegisterSaleCommand(
     IReadOnlyList<RegisterSaleLine> Lines,
     IReadOnlyList<RegisterSalePayment> Payments,
-    bool PrescriptionChecked) : IRequest<SaleDto>;
+    bool PrescriptionChecked,
+    Guid? CustomerId = null) : IRequest<SaleDto>;
 
 public sealed record RegisterSaleLine(Guid ProductId, Guid SaleUnitId, int Quantity);
 
@@ -26,6 +28,7 @@ public sealed class RegisterSaleHandler(
     IProductRepository products,
     IBatchRepository batches,
     ISaleRepository sales,
+    ICreditAccountRepository creditAccounts,
     IDocumentNumberSequence documentNumbers,
     IUnitOfWork unitOfWork,
     ICurrentPharmacy currentPharmacy,
@@ -56,17 +59,26 @@ public sealed class RegisterSaleHandler(
             .ToList();
         var payments = (command.Payments ?? []).Select(p => new PaymentLine(p.Method, p.Amount)).ToList();
 
+        // The customer's credit account, tracked: if another register charges it at the same time, its RowVersion
+        // makes the second sale a 409 instead of letting both pass the limit. The domain checks the limit.
+        var creditAccount = command.CustomerId is { } customerId
+            ? await creditAccounts.GetByCustomerAsync(pharmacyId, customerId, cancellationToken)
+                ?? throw new ValidationException("El cliente no tiene fiado habilitado.")
+            : null;
+
         // The ticket number and the sale commit together. The number's row stays locked until the commit (a
         // simultaneous sale waits instead of repeating it); if anything below fails, the rollback gives it back.
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var number = await documentNumbers.NextAsync(pharmacyId, NumberedDocument.Sale, cancellationToken);
         var sale = Sale.Register(
-            pharmacyId, number, session.Id, currentUser.UserId, clock.Now, lines, payments, command.PrescriptionChecked);
+            pharmacyId, number, session.Id, currentUser.UserId, clock.Now, lines, payments, command.PrescriptionChecked,
+            creditAccount);
         sales.Add(sale);
 
-        // Sale, batches and their kardex movements in one SaveChanges. Two sales taking the last units of the same
-        // batch at once: the second fails here with a 409 (RowVersion on the batch).
+        // Sale, batches with their kardex movements and the credit account with its entry, in one SaveChanges. Two
+        // sales taking the last units of a batch (or the last of a customer's limit) at once: the second fails here
+        // with a 409 (RowVersion on the batch or the account).
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 

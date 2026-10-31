@@ -26,6 +26,10 @@ erDiagram
     SaleItems ||--|{ SaleItemBatches : "salió de"
     Batches ||--o{ SaleItemBatches : ""
     Customers ||--o{ Sales : "compras (fiado)"
+    Customers ||--o| CreditAccounts : "cuenta de fiado"
+    CreditAccounts ||--o{ CreditEntries : "movimientos"
+    CreditAccounts ||--o{ CreditPayments : "abonos"
+    CashSessions ||--o{ CreditPayments : "abonos del turno"
     Sales ||--o{ SaleReturns : "devoluciones"
     CashSessions ||--o{ SaleReturns : "reintegros del turno"
     SaleReturns ||--|{ SaleReturnItems : "líneas"
@@ -194,9 +198,35 @@ erDiagram
         int Quantity "unidades base"
         decimal UnitCost "costo del lote"
     }
+    CreditAccounts {
+        guid Id PK
+        guid CustomerId FK "una cuenta por cliente"
+        decimal Limit "cupo"
+        decimal Balance "deuda actual"
+        datetimeoffset DebtSince "debe desde"
+        bool IsSuspended
+        rowversion RowVersion
+    }
+    CreditEntries {
+        guid Id PK
+        guid CreditAccountId FK
+        int Type "1 fiado, 2 abono, 3 devolución"
+        decimal Change "+ sube la deuda, − la baja"
+        decimal BalanceAfter
+        guid ReferenceId "venta, abono o devolución"
+    }
+    CreditPayments {
+        guid Id PK
+        bigint Number "consecutivo propio"
+        guid CreditAccountId FK
+        guid CashSessionId FK
+        int Method "nunca fiado"
+        decimal Amount
+        decimal BalanceAfter
+    }
     DocumentCounters {
         guid PharmacyId PK
-        int Document PK "1 tiquete, 2 devolución"
+        int Document PK "1 tiquete, 2 devolución, 3 abono"
         bigint LastNumber
     }
     CashMovements {
@@ -209,7 +239,7 @@ erDiagram
     }
 ```
 
-`Customers` se relaciona con las ventas (cliente opcional, obligatorio si se fía). Las cuentas de fiado y los abonos llegan en el paso 5c.
+`Customers` se relaciona con las ventas (cliente opcional, obligatorio si se fía). Un cliente puede tener una cuenta de fiado (`CreditAccounts`), con sus movimientos (`CreditEntries`) y sus abonos (`CreditPayments`).
 
 ## Convenciones del esquema
 
@@ -221,7 +251,7 @@ erDiagram
 | **Enums como `int`** en la base (y como texto en el JSON de la API) | El valor numérico es estable; en la API el texto es legible. Los significados están en la tabla de abajo. |
 | **Dinero `decimal(18,2)`; costos por unidad `decimal(18,4)`** | Una caja de $10.000 con 30 tabletas cuesta 333,3333 cada una; con 2 decimales se acumularía el error de redondeo. |
 | **Fechas y horas `datetimeoffset`** con la hora de Colombia (-05:00); **fechas sin hora `date`** | El offset deja claro a qué hora local ocurrió algo. Un vencimiento es un día, no un instante. |
-| **`RowVersion`** en `Batches`, `Purchases` y `CashSessions` | Concurrencia optimista: dos cambios simultáneos sobre la misma fila no se pisan (la API responde 409). |
+| **`RowVersion`** en `Batches`, `Purchases`, `CashSessions` y `CreditAccounts` | Concurrencia optimista: dos cambios simultáneos sobre la misma fila no se pisan (la API responde 409). |
 | **Sin `CHECK (Quantity >= 0)` en `Batches`** | A propósito: la sincronización offline (fase 6) puede dejar stock negativo, y se marca para revisar. La regla "nunca negativo en línea" vive en el dominio. |
 | **NIT guardado como texto** (`900123456-8`) | `NitConverter` convierte el value object `Nit` a texto y viceversa. |
 
@@ -238,6 +268,8 @@ erDiagram
 | `CashSessions (PharmacyId)` único, **filtrado** `WHERE Status = 1`, llamado `IX_CashSessions_OneOpenPerPharmacy` | **Un solo turno abierto por farmacia** (una caja). Los cerrados no cuentan. `UnitOfWork` lo reconoce por su nombre para dar un mensaje claro. |
 | `Sales (PharmacyId, Number)` único | Un número de tiquete por venta. Los números los asigna `DocumentCounters`; el índice es la última defensa. |
 | `SaleReturns (PharmacyId, Number)` único | Igual, para las devoluciones (su propio consecutivo). |
+| `CreditPayments (PharmacyId, Number)` único | Igual, para los abonos. |
+| `CreditAccounts (PharmacyId, CustomerId)` único | Una cuenta de fiado por cliente. |
 | `RefreshTokens (TokenHash)` único | Búsqueda directa del token presentado. |
 
 Los demás índices aceleran consultas frecuentes: lotes de un producto por vencimiento (FEFO), kardex por lote o producto y fecha, compras por estado y fecha.
@@ -256,7 +288,8 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 | `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia, 5 = Fiado |
 | `Products.VatRate`, `SaleItems.VatRate` | Igual que `PurchaseItems.VatRate`: el valor es el porcentaje |
 | `SaleReturnItems.Disposition` | 1 = Vuelve al inventario, 2 = Se descarta |
-| `DocumentCounters.Document` | 1 = Tiquete de venta, 2 = Devolución |
+| `DocumentCounters.Document` | 1 = Tiquete de venta, 2 = Devolución, 3 = Abono |
+| `CreditEntries.Type` | 1 = Fiado (venta), 2 = Abono, 3 = Devolución de algo fiado |
 
 ## Los consecutivos (tiquetes y devoluciones)
 
@@ -293,6 +326,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddSales` | Ventas, líneas, lotes de cada línea, pagos, contador de tiquetes y `Products.VatRate` |
 | `AddSaleReturns` | Devoluciones con sus líneas y lotes; `SaleCounters` pasa a `DocumentCounters` (editada a mano: copia los números de tiquete antes de borrar la tabla vieja, y al revés en `Down`) |
 | `AddCustomerAndCreditToSales` | `Sales.CustomerId` (el cliente de una venta fiada) y `SaleReturns.CreditedToAccount` (lo que una devolución descontó de la deuda) |
+| `AddCreditAccounts` | Cuentas de fiado, sus movimientos y los abonos |
 
 Comandos (desde la raíz del repo):
 

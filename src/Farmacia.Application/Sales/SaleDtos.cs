@@ -6,6 +6,8 @@ namespace Farmacia.Application.Sales;
 /// <summary>
 /// The ticket. No costs: the cashier sees it, and margins stay out of the cashier's view (as with purchases).
 /// </summary>
+/// <param name="CustomerName">When the sale has a customer (always when part of it is on credit).</param>
+/// <param name="CreditAmount">The part taken on credit ("fiado").</param>
 public sealed record SaleDto(
     Guid Id,
     long Number,
@@ -15,6 +17,8 @@ public sealed record SaleDto(
     decimal Total,
     decimal Vat,
     decimal Change,
+    string? CustomerName,
+    decimal CreditAmount,
     bool PrescriptionChecked,
     IReadOnlyList<SaleItemDto> Items,
     IReadOnlyList<PaymentDto> Payments);

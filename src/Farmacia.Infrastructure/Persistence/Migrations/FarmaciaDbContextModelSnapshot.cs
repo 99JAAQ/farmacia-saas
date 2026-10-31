@@ -122,6 +122,145 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.ToTable("CashSessions");
                 });
 
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("DebtSince")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsSuspended")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("Limit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PharmacyId", "Balance");
+
+                    b.HasIndex("PharmacyId", "CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("CreditAccounts");
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Change")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CreditAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PharmacyId");
+
+                    b.HasIndex("CreditAccountId", "OccurredAt");
+
+                    b.ToTable("CreditEntries");
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CashSessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CreditAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Number")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ReceivedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CashSessionId");
+
+                    b.HasIndex("CreditAccountId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ReceivedBy");
+
+                    b.HasIndex("PharmacyId", "CashSessionId");
+
+                    b.HasIndex("PharmacyId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("CreditPayments");
+                });
+
             modelBuilder.Entity("Farmacia.Domain.Customers.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1144,6 +1283,75 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
                         .WithMany()
                         .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditAccount", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditEntry", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Credit.CreditAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CreditAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Credit.CreditPayment", b =>
+                {
+                    b.HasOne("Farmacia.Domain.Cash.CashSession", null)
+                        .WithMany()
+                        .HasForeignKey("CashSessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Credit.CreditAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CreditAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReceivedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

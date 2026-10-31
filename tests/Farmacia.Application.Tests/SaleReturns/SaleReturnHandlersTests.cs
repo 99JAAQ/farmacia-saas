@@ -29,6 +29,8 @@ public class SaleReturnHandlersTests
     private readonly InMemorySaleReturnRepository _returns = new();
     private readonly FakeDocumentNumberSequence _documentNumbers = new();
     private readonly FakeUserReader _users = new();
+    private readonly InMemoryCustomerRepository _customers = new();
+    private readonly InMemoryCreditAccountRepository _creditAccounts = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
 
     private readonly Batch _batch;
@@ -56,7 +58,7 @@ public class SaleReturnHandlersTests
 
     private Task<SaleReturnDto> ReturnAsync(Guid userId, int boxes = 1, ReturnDisposition disposition = ReturnDisposition.Restock, Guid? saleId = null) =>
         new RegisterSaleReturnHandler(
-                _sessions, _sales, _returns, _batches, _documentNumbers, _unitOfWork,
+                _sessions, _sales, _returns, _batches, _creditAccounts, _documentNumbers, _unitOfWork,
                 new FakeCurrentPharmacy(_pharmacyId), new FakeCurrentUser(userId, Roles.Cashier), new FakeClock(Now), Reader)
             .Handle(new RegisterSaleReturnCommand(
                     saleId ?? _sale.Id, "Le formularon otro medicamento",
@@ -87,7 +89,7 @@ public class SaleReturnHandlersTests
 
         await Assert.ThrowsAsync<Domain.Common.DomainException>(() => ReturnAsync(_ana, boxes: 2));
 
-        var ticket = await new GetSaleByNumberHandler(_sales, new FakeCurrentPharmacy(_pharmacyId), new SaleReader(_products, _users, _returns))
+        var ticket = await new GetSaleByNumberHandler(_sales, new FakeCurrentPharmacy(_pharmacyId), new SaleReader(_products, _users, _returns, _customers))
             .Handle(new GetSaleByNumberQuery(7), CancellationToken.None);
         Assert.Equal((3, 2), (ticket.Items.Single().Quantity, ticket.Items.Single().ReturnedQuantity));
     }
@@ -110,7 +112,7 @@ public class SaleReturnHandlersTests
         await Assert.ThrowsAsync<NotFoundException>(() => ReturnAsync(_ana, saleId: Guid.CreateVersion7()));
 
         var handler = new RegisterSaleReturnHandler(
-            _sessions, _sales, _returns, _batches, _documentNumbers, _unitOfWork,
+            _sessions, _sales, _returns, _batches, _creditAccounts, _documentNumbers, _unitOfWork,
             new FakeCurrentPharmacy(_pharmacyId), new FakeCurrentUser(_ana, Roles.Cashier), new FakeClock(Now), Reader);
         await Assert.ThrowsAsync<ValidationException>(() =>
             handler.Handle(new RegisterSaleReturnCommand(_sale.Id, "Motivo", []), CancellationToken.None));
@@ -132,7 +134,7 @@ public class SaleReturnHandlersTests
     [Fact]
     public async Task GetSaleByNumber_OfAnotherPharmacy_IsNotFound()
     {
-        var handler = new GetSaleByNumberHandler(_sales, new FakeCurrentPharmacy(Guid.CreateVersion7()), new SaleReader(_products, _users, _returns));
+        var handler = new GetSaleByNumberHandler(_sales, new FakeCurrentPharmacy(Guid.CreateVersion7()), new SaleReader(_products, _users, _returns, _customers));
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(new GetSaleByNumberQuery(7), CancellationToken.None));
     }

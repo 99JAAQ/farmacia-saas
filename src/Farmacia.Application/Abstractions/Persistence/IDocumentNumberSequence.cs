@@ -7,6 +7,9 @@ public enum NumberedDocument
     Sale = 1,
 
     SaleReturn = 2,
+
+    /// <summary>A payment towards a customer's credit balance ("abono").</summary>
+    CreditPayment = 3,
 }
 
 /// <summary>The consecutive numbers of each pharmacy's documents (1, 2, 3...), one sequence per kind of document.</summary>

@@ -19,6 +19,7 @@ public sealed class RegisterSaleReturnHandler(
     ISaleRepository sales,
     ISaleReturnRepository returns,
     IBatchRepository batches,
+    ICreditAccountRepository creditAccounts,
     IDocumentNumberSequence documentNumbers,
     IUnitOfWork unitOfWork,
     ICurrentPharmacy currentPharmacy,
@@ -59,13 +60,19 @@ public sealed class RegisterSaleReturnHandler(
             .ToList();
         var saleBatches = batchIds.Count == 0 ? [] : await batches.GetByIdsAsync(pharmacyId, batchIds, cancellationToken);
 
+        // A sale with credit lowers its customer's debt first (ADR 0010). Read after the number, like the earlier returns.
+        var creditAccount = sale is { CreditAmount: > 0, CustomerId: { } customerId }
+            ? await creditAccounts.GetByCustomerAsync(pharmacyId, customerId, cancellationToken)
+                ?? throw new InvalidOperationException("A sale with credit has no credit account.")
+            : null;
+
         var saleReturn = SaleReturn.Register(
             number, sale, previous, session.Id, currentUser.UserId, clock.Now, command.Reason,
             command.Lines.Select(l => new ReturnLine(l.SaleItemId, l.Quantity, l.Disposition)).ToList(),
-            saleBatches);
+            saleBatches, creditAccount);
         returns.Add(saleReturn);
 
-        // Return, batches and their kardex movements in one SaveChanges.
+        // Return, batches and their kardex movements, and the credit account and its entry, in one SaveChanges.
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 

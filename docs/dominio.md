@@ -162,8 +162,18 @@ Ver [ADR 0010](adr/0010-fiado-con-cuenta-cupo-y-abonos.md).
 
 **El fiado en la devolución:** lo que se fió no se devuelve en efectivo. `SaleReturn.Register` descuenta de la deuda lo **menor** entre el reintegro, lo fiado en ese tiquete que aún no se ha descontado (otras devoluciones del mismo tiquete pudieron descontar ya) y la deuda actual. El resto es efectivo. Si el cliente ya había pagado la deuda con abonos, recibe efectivo, porque esa plata sí la puso. La devolución guarda `CreditedToAccount` y `CashRefund`, y **la caja resta solo el `CashRefund`**.
 
+**Los casos de uso:**
+- `RegisterSale` recibe opcionalmente el `CustomerId` y carga la cuenta del cliente. Si el cliente no tiene fiado habilitado, la venta fiada se rechaza (400).
+- `RegisterSaleReturn` carga la cuenta cuando el tiquete tuvo fiado, después de reservar el número (igual que las devoluciones anteriores).
+- `RegisterCreditPayment` (abono): exige el turno propio, reserva el número del abono, lee la cuenta y guarda el abono, la cuenta y su movimiento en una transacción. `GetCreditPaymentById` devuelve el comprobante.
+- **Concurrencia del cupo:** si dos cajas le fían a la vez al mismo cliente, el `RowVersion` de la cuenta hace que la segunda reciba un 409. Un test de integración lo prueba con dos ventas que salen de lotes distintos (si salieran del mismo lote, el `RowVersion` del lote taparía el de la cuenta); sin el `RowVersion` de la cuenta, el test falla.
+- **Caja:** el efectivo esperado suma los abonos en efectivo y resta solo la parte de las devoluciones que salió en efectivo. Un test cierra un turno con venta mixta, abonos en efectivo y por Nequi, y una devolución de algo fiado.
+
+El tiquete (`SaleDto`) trae `CustomerName` y `CreditAmount`; el comprobante de devolución, `CreditedToAccount` y `CashRefund`.
+
 **Pendiente en próximos pasos:**
-- los casos de uso, la persistencia, los endpoints y las pantallas.
+- la administración (crear clientes, abrir la cuenta con su cupo, cambiar el cupo, suspender, estado de cuenta, deudores) y los endpoints (5d);
+- las pantallas (5e).
 
 ## Colombia en el código
 

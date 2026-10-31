@@ -4,7 +4,8 @@ using Farmacia.Domain.Sales;
 namespace Farmacia.Application.Sales;
 
 /// <summary>Builds the ticket DTO with product, sale unit and cashier names (they live in other aggregates).</summary>
-public sealed class SaleReader(IProductRepository products, IUserReader users, ISaleReturnRepository returns)
+public sealed class SaleReader(
+    IProductRepository products, IUserReader users, ISaleReturnRepository returns, ICustomerRepository customers)
 {
     public async Task<SaleDto> ToDtoAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -15,6 +16,9 @@ public sealed class SaleReader(IProductRepository products, IUserReader users, I
             .SelectMany(r => r.Items)
             .GroupBy(i => i.SaleItemId)
             .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
+        var customer = sale.CustomerId is { } customerId
+            ? await customers.GetByIdAsync(sale.PharmacyId, customerId, cancellationToken)
+            : null;
 
         return new SaleDto(
             sale.Id,
@@ -25,6 +29,8 @@ public sealed class SaleReader(IProductRepository products, IUserReader users, I
             sale.Total,
             sale.Vat,
             sale.Change,
+            customer?.FullName,
+            sale.CreditAmount,
             PrescriptionChecked: sale.PrescriptionCheckedBy is not null,
             sale.Items
                 .Select(item =>

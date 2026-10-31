@@ -1,5 +1,6 @@
 using Farmacia.Domain.Cash;
 using Farmacia.Domain.Common;
+using Farmacia.Domain.Credit;
 using Farmacia.Domain.Customers;
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Pharmacies;
@@ -30,6 +31,9 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<SaleReturn> SaleReturns => Set<SaleReturn>();
+    public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
+    public DbSet<CreditEntry> CreditEntries => Set<CreditEntry>();
+    public DbSet<CreditPayment> CreditPayments => Set<CreditPayment>();
     public DbSet<DocumentCounter> DocumentCounters => Set<DocumentCounter>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
@@ -67,31 +71,44 @@ public class FarmaciaDbContext(DbContextOptions<FarmaciaDbContext> options)
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
-        var batches = TrackPendingMovements();
+        var clear = TrackPendingRecords();
         var result = base.SaveChanges(acceptAllChangesOnSuccess);
-        batches.ForEach(b => b.ClearPendingMovements());
+        clear();
         return result;
     }
 
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
-        var batches = TrackPendingMovements();
+        var clear = TrackPendingRecords();
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-        batches.ForEach(b => b.ClearPendingMovements());
+        clear();
         return result;
     }
 
-    // Batch records its kardex entries in memory; they are saved here, in the same transaction as the batch.
-    private List<Batch> TrackPendingMovements()
+    /// <summary>
+    /// Batch and CreditAccount record their history (kardex, credit entries) in memory; it is saved here, in the same
+    /// transaction as the balance it explains. Returns what clears the pending lists once saved.
+    /// </summary>
+    private Action TrackPendingRecords()
     {
         var batches = ChangeTracker.Entries<Batch>()
             .Select(e => e.Entity)
             .Where(b => b.PendingMovements.Count > 0)
             .ToList();
+        var accounts = ChangeTracker.Entries<CreditAccount>()
+            .Select(e => e.Entity)
+            .Where(a => a.PendingEntries.Count > 0)
+            .ToList();
 
         foreach (var batch in batches)
             StockMovements.AddRange(batch.PendingMovements);
+        foreach (var account in accounts)
+            CreditEntries.AddRange(account.PendingEntries);
 
-        return batches;
+        return () =>
+        {
+            batches.ForEach(b => b.ClearPendingMovements());
+            accounts.ForEach(a => a.ClearPendingEntries());
+        };
     }
 }

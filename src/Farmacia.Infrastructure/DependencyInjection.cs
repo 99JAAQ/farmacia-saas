@@ -36,6 +36,9 @@ public static class DependencyInjection
         services.AddScoped<IUserReader, UserReader>();
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
+        services.AddScoped<ICreditPaymentRepository, CreditPaymentRepository>();
         services.AddScoped<IDocumentNumberSequence, DocumentNumberSequence>();
 
         // Identity core only (users, roles, password hashing, lockout): no cookies, the API issues its own JWT.
