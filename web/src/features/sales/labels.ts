@@ -6,6 +6,7 @@ export const paymentMethodLabels: Record<PaymentMethod, string> = {
   Card: 'Tarjeta',
   DigitalWallet: 'Nequi / Daviplata',
   BankTransfer: 'Transferencia',
+  Credit: 'Fiado',
 }
 
-export const nonCashMethods: NonCashMethod[] = ['Card', 'DigitalWallet', 'BankTransfer']
+export const nonCashMethods: NonCashMethod[] = ['Card', 'DigitalWallet', 'BankTransfer', 'Credit']

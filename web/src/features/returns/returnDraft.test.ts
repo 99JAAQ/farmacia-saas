@@ -25,6 +25,8 @@ const sale = (items: ReturnType<typeof item>[]): Sale => ({
   total: items.reduce((sum, i) => sum + i.total, 0),
   vat: 0,
   change: 0,
+  customerName: null,
+  creditAmount: 0,
   prescriptionChecked: false,
   items,
   payments: [],

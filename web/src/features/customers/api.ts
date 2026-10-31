@@ -109,3 +109,25 @@ export function changeCreditLimit(customerId: string, limit: number): Promise<vo
 export function setCreditSuspended(customerId: string, suspended: boolean): Promise<void> {
   return api<void>(`/api/customers/${customerId}/credit/${suspended ? 'suspend' : 'resume'}`, { method: 'POST' })
 }
+
+export type CreditPaymentMethod = 'Cash' | 'Card' | 'DigitalWallet' | 'BankTransfer'
+
+/** The payment voucher ("abono"). */
+export interface CreditPayment {
+  id: string
+  number: number
+  customerId: string
+  customerName: string
+  receivedAt: string
+  cashSessionId: string
+  receivedByName: string
+  method: CreditPaymentMethod
+  amount: number
+  /** What the customer still owes right after this payment. */
+  balanceAfter: number
+}
+
+/** In the current user's open shift; answers with the whole voucher, ready to print. */
+export function registerCreditPayment(customerId: string, method: CreditPaymentMethod, amount: number): Promise<CreditPayment> {
+  return api<CreditPayment>('/api/credit-payments', { method: 'POST', body: { customerId, method, amount } })
+}

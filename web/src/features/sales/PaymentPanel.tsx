@@ -2,6 +2,8 @@ import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { Customer } from '@/features/customers/api'
+import { CreditCustomerPicker } from '@/features/customers/CreditCustomerPicker'
 import { formatMoney } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { nonCashMethods, paymentMethodLabels } from './labels'
@@ -13,9 +15,12 @@ interface Props {
   onCashText: (text: string) => void
   rows: NonCashRow[]
   onRows: (rows: NonCashRow[]) => void
+  /** The customer a "fiado" is taken for; asked only while there is a credit row. */
+  creditCustomer: Customer | null
+  onCreditCustomer: (customer: Customer | null) => void
 }
 
-export function PaymentPanel({ summary, cashText, onCashText, rows, onRows }: Props) {
+export function PaymentPanel({ summary, cashText, onCashText, rows, onRows, creditCustomer, onCreditCustomer }: Props) {
   const available = nonCashMethods.filter((method) => !rows.some((row) => row.method === method))
   const setRow = (method: NonCashMethod, text: string) =>
     onRows(rows.map((row) => (row.method === method ? { ...row, text } : row)))
@@ -40,11 +45,15 @@ export function PaymentPanel({ summary, cashText, onCashText, rows, onRows }: Pr
               variant="ghost"
               size="icon"
               aria-label={`Quitar el pago con ${paymentMethodLabels[row.method]}`}
-              onClick={() => onRows(rows.filter((other) => other.method !== row.method))}
+              onClick={() => {
+                onRows(rows.filter((other) => other.method !== row.method))
+                if (row.method === 'Credit') onCreditCustomer(null)
+              }}
             >
               <X />
             </Button>
           </div>
+          {row.method === 'Credit' && <CreditCustomerPicker selected={creditCustomer} onSelect={onCreditCustomer} />}
         </div>
       ))}
 

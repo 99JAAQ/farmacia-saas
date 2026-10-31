@@ -47,6 +47,7 @@ export function Ticket({ sale }: { sale: Sale }) {
       </dl>
 
       <div className="border-t border-dashed pt-2 text-center text-xs text-muted-foreground">
+        {sale.customerName && <div>Cliente: {sale.customerName}</div>}
         {sale.prescriptionChecked && <div>Fórmula médica revisada</div>}
         <div>Lo atendió {sale.soldByName}</div>
         <div>Gracias por su compra</div>

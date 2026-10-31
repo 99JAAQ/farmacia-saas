@@ -125,6 +125,27 @@ describe('summarizePayment (the same rules as the server)', () => {
     expect([toAmount('20000'), toAmount(' '), toAmount('-5'), toAmount('abc')]).toEqual([20_000, 0, 0, 0])
   })
 
+  it('credit pays an exact amount, like a card: cash covers the rest', () => {
+    const rosa = { available: 50_000, isSuspended: false }
+    const summary = summarizePayment(24_000, [{ method: 'Credit', amount: 14_000 }], 10_000, rosa)
+
+    expect(summary).toMatchObject({ cashDue: 10_000, change: 0, problem: null })
+    expect(summary.payments).toEqual([
+      { method: 'Cash', amount: 10_000 },
+      { method: 'Credit', amount: 14_000 },
+    ])
+  })
+
+  it('credit needs a customer, an account not suspended, and room in the limit', () => {
+    const onCredit = (customer: { available: number; isSuspended: boolean } | null) =>
+      summarizePayment(24_000, [{ method: 'Credit', amount: 24_000 }], null, customer).problem
+
+    expect(onCredit(null)).toContain('cliente')
+    expect(onCredit({ available: 50_000, isSuspended: true })).toContain('suspendido')
+    expect(onCredit({ available: 20_000, isSuspended: false })).toContain('cupo')
+    expect(onCredit({ available: 24_000, isSuspended: false })).toBeNull() // exactly up to the limit is fine
+  })
+
   it('an empty cart cannot be charged', () => {
     expect(summarizePayment(0, [], 10_000).problem).not.toBeNull()
   })

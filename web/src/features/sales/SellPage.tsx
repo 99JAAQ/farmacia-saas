@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { CashSession } from '@/features/cash/api'
 import { RequireOwnShift } from '@/features/cash/RequireOwnShift'
+import { customerKeys, type Customer } from '@/features/customers/api'
 import { ProductPicker } from '@/features/products/ProductPicker'
 import type { User } from '@/lib/api/types'
 import { formatMoney } from '@/lib/format'
@@ -27,6 +28,7 @@ function PointOfSale({ user, session }: { user: User; session: CashSession }) {
   const searchRef = useRef<HTMLInputElement>(null)
   const [cart, setCart] = useCart(user)
   const [rows, setRows] = useState<NonCashRow[]>([])
+  const [creditCustomer, setCreditCustomer] = useState<Customer | null>(null)
   const [cashText, setCashText] = useState('')
   const [prescriptionChecked, setPrescriptionChecked] = useState(false)
   const [ticket, setTicket] = useState<Sale | null>(null)
@@ -36,6 +38,7 @@ function PointOfSale({ user, session }: { user: User; session: CashSession }) {
     total,
     rows.map((row) => ({ method: row.method, amount: toAmount(row.text) })),
     cashText.trim() === '' ? null : toAmount(cashText),
+    creditCustomer?.credit ?? null,
   )
   const prescriptionNeeded = needsPrescription(cart)
   const problem =
@@ -47,9 +50,12 @@ function PointOfSale({ user, session }: { user: User; session: CashSession }) {
       setTicket(sale)
       setCart(emptyCart)
       setRows([])
+      setCreditCustomer(null)
       setCashText('')
       setPrescriptionChecked(false)
       void queryClient.invalidateQueries({ queryKey: saleKeys.byShift(session.id) })
+      // A sale on credit changed the customer's balance and what is available.
+      if (sale.creditAmount > 0) void queryClient.invalidateQueries({ queryKey: customerKeys.all })
     },
   })
 
@@ -65,6 +71,8 @@ function PointOfSale({ user, session }: { user: User; session: CashSession }) {
       lines: cart.map(({ productId, saleUnitId, quantity }) => ({ productId, saleUnitId, quantity })),
       payments: summary.payments,
       prescriptionChecked: prescriptionNeeded && prescriptionChecked,
+      // Only with a credit part: the customer is who the debt goes to.
+      customerId: rows.some((row) => row.method === 'Credit') ? creditCustomer?.id : undefined,
     })
   }
 
@@ -134,6 +142,11 @@ function PointOfSale({ user, session }: { user: User; session: CashSession }) {
               onRows={(next) => {
                 mutation.reset()
                 setRows(next)
+              }}
+              creditCustomer={creditCustomer}
+              onCreditCustomer={(customer) => {
+                mutation.reset()
+                setCreditCustomer(customer)
               }}
             />
 

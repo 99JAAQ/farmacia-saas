@@ -23,8 +23,12 @@ export interface SaleReturn {
   cashSessionId: string
   returnedByName: string
   reason: string
-  /** Cash given back. */
+  /** What the returned units were worth: creditedToAccount + cashRefund. */
   refund: number
+  /** The part that lowered the customer's credit debt (a sale taken on credit). */
+  creditedToAccount: number
+  /** The cash that leaves the drawer. */
+  cashRefund: number
   items: SaleReturnItem[]
 }
 

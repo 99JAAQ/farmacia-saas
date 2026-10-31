@@ -28,10 +28,18 @@ export function ReturnVoucher({ saleReturn }: { saleReturn: SaleReturn }) {
         </tbody>
       </table>
 
-      <div className="flex justify-between border-t border-dashed pt-2 font-semibold">
-        <span>Efectivo devuelto</span>
-        <span className="tabular-nums">{formatMoney(saleReturn.refund)}</span>
-      </div>
+      <dl className="grid gap-0.5 border-t border-dashed pt-2">
+        {saleReturn.creditedToAccount > 0 && (
+          <div className="flex justify-between">
+            <dt>Descontado del fiado</dt>
+            <dd className="tabular-nums">{formatMoney(saleReturn.creditedToAccount)}</dd>
+          </div>
+        )}
+        <div className="flex justify-between font-semibold">
+          <dt>Efectivo devuelto</dt>
+          <dd className="tabular-nums">{formatMoney(saleReturn.cashRefund)}</dd>
+        </div>
+      </dl>
 
       <div className="border-t border-dashed pt-2 text-center text-xs text-muted-foreground">
         <div>Motivo: {saleReturn.reason}</div>

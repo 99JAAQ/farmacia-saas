@@ -1,7 +1,7 @@
 import type { VatRate } from '@/features/purchases/api'
 import { api } from '@/lib/api/http'
 
-export type PaymentMethod = 'Cash' | 'Card' | 'DigitalWallet' | 'BankTransfer'
+export type PaymentMethod = 'Cash' | 'Card' | 'DigitalWallet' | 'BankTransfer' | 'Credit'
 
 export interface SaleItem {
   id: string
@@ -38,6 +38,10 @@ export interface Sale {
   total: number
   vat: number
   change: number
+  /** When the sale has a customer (always when part of it is on credit). */
+  customerName: string | null
+  /** The part taken on credit ("fiado"). */
+  creditAmount: number
   prescriptionChecked: boolean
   items: SaleItem[]
   payments: Payment[]
@@ -60,6 +64,8 @@ export interface RegisterSaleRequest {
   /** For cash, the amount the customer handed over. */
   payments: { method: PaymentMethod; amount: number }[]
   prescriptionChecked: boolean
+  /** Required to take part of the sale on credit. */
+  customerId?: string
 }
 
 export const saleKeys = {

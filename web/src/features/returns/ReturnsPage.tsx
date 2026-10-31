@@ -82,7 +82,7 @@ function Returns() {
 
       <PrintDialog
         open={voucher !== null}
-        title="Devolución registrada"
+        title={voucher && voucher.creditedToAccount > 0 ? `Entregue ${formatMoney(voucher.cashRefund)} en efectivo` : 'Devolución registrada'}
         closeLabel="Listo"
         finalFocus={numberRef}
         onClose={() => setVoucher(null)}
@@ -209,9 +209,19 @@ function ReturnForm({ sale, onReturned }: { sale: Sale; onReturned: (saleReturn:
           </Alert>
         )}
 
+        {sale.creditAmount > 0 && (
+          // How much goes to the debt depends on what the customer owes today: the server splits it (ADR 0010).
+          <Alert>
+            <AlertDescription>
+              Este tiquete tuvo {formatMoney(sale.creditAmount)} fiados a {sale.customerName}. La devolución se descuenta
+              primero de su deuda; el comprobante dirá cuánto efectivo entregar.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
           <div>
-            <div className="text-sm text-muted-foreground">Efectivo a devolver</div>
+            <div className="text-sm text-muted-foreground">{sale.creditAmount > 0 ? 'Valor a devolver' : 'Efectivo a devolver'}</div>
             <div className="text-3xl font-semibold tabular-nums">{formatMoney(refund)}</div>
           </div>
           <div className="grid justify-items-end gap-1">

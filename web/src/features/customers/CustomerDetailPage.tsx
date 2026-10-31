@@ -23,6 +23,7 @@ import {
   type Customer,
 } from './api'
 import { creditEntryLabels, describeCredit, documentTypeLabels, toneClasses } from './labels'
+import { ReceivePayment } from './ReceivePayment'
 
 export function CustomerDetailPage() {
   const { id = '' } = useParams()
@@ -106,6 +107,8 @@ function CreditPanel({ customer }: { customer: Customer }) {
             />
           </dl>
         )}
+
+        {account && <ReceivePayment customer={customer} />}
 
         {error && (
           <Alert variant="destructive" role="alert">
