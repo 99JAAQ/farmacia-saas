@@ -12,6 +12,8 @@ const product = (name: string, units: { name: string; factor: number; barcode: s
   pharmaceuticalForm: null,
   sanitaryRegistration: null,
   categoryId: null,
+  vatRate: 'Exempt',
+  isActive: true,
   saleUnits: units.map((u) => ({ id: `${name}-${u.name}`, name: u.name, conversionFactor: u.factor, price: 1000, barcode: u.barcode })),
 })
 

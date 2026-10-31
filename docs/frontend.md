@@ -69,7 +69,7 @@ Rutas actuales (`src/router.tsx`):
 | `/clientes`, `/clientes/:id` | `operateCash` (administrar: `manageCredit`) | Clientes y fiado: búsqueda, quién debe, cupo, suspender, movimientos |
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
-| `/catalogo` | `manageCatalog` | Catálogo (provisional) |
+| `/catalogo`, `/catalogo/:id` | `manageCatalog` | Catálogo con stock y vencimientos; ficha del producto: datos, presentaciones, descontinuar, lotes |
 
 ## Apariencia
 
@@ -113,6 +113,12 @@ Rutas actuales (`src/router.tsx`):
   - **"Recibir abono"** (en la ficha de un cliente que debe): valor (con "Todo" = la deuda) y medio de pago; luego el comprobante imprimible con lo que queda debiendo. Sin turno propio abierto, en vez del botón se explica que hay que abrirlo en Caja.
 - **Fiado en el POS:** "+ Fiado" es un medio de pago más y abre `CreditCustomerPicker`, que solo lista clientes con fiado y muestra lo disponible de cada uno. `summarizePayment` aplica las reglas del servidor: el fiado necesita cliente, una cuenta no suspendida y espacio en el cupo. El tiquete muestra el cliente.
 - **Devolución de un tiquete fiado:** la pantalla avisa que primero se descuenta de la deuda; cuánto exactamente depende de la deuda de hoy y lo calcula el servidor. El comprobante separa "Descontado del fiado" de "Efectivo devuelto", y el título del diálogo dice cuánto efectivo entregar.
+- **Catálogo (`/catalogo`):**
+  - La lista muestra por producto sus presentaciones con precio, el stock y el próximo vencimiento. Marca en rojo las unidades en lotes vencidos y como aviso lo que vence en 90 días o menos. Los descontinuados se ven solo con "Mostrar descontinuados".
+  - El stock se expresa en palabras de mostrador con `formatStock` ("3 × Caja x30 + 5 tabletas"): se guarda en unidades base, pero se lee en la presentación más grande y lo que queda suelto. `daysUntil` cuenta días entre fechas sin crear `Date` con zona horaria.
+  - "Nuevo producto" pide los datos y la primera presentación (la API exige al menos una), y lleva a la ficha.
+  - La ficha (`/catalogo/:id`) tiene el formulario de datos (con categoría, que se puede crear ahí mismo), las presentaciones editables una por una (cada fila con su "Guardar"), "Descontinuar"/"Reactivar" y los lotes con su vencimiento y costo.
+  - Las claves de React están acotadas: el formulario de datos se reinicia solo si cambian los datos del producto, y cada presentación solo si cambia ella. Así, guardar un precio no borra lo que se estaba editando en otra parte de la ficha.
 - **Tiquete y comprobante impresos:** `PrintDialog` (en `components/`) muestra el tiquete o el comprobante de devolución con el botón Imprimir; los dos llevan la clase `ticket-print`. `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.

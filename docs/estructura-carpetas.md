@@ -121,12 +121,13 @@ web/
     │   ├── cash/            → pantalla de caja
     │   ├── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
     │   ├── returns/         → devoluciones: borrador (lógica pura), pantalla, comprobante
-    │   └── customers/       → clientes y fiado: búsqueda, deudores, cupo, movimientos
+    │   ├── customers/       → clientes y fiado: búsqueda, deudores, cupo, movimientos
+    │   └── catalog/         → catálogo: lista con stock, ficha del producto, presentaciones, lotes
     ├── lib/
     │   ├── api/http.ts      → cliente HTTP (token en memoria, refresh único)
     │   ├── format.ts        → dinero, fechas y horas en formato colombiano
     │   └── nit.ts           → dígito de verificación del NIT
-    └── pages/               → páginas simples sin funcionalidad propia (inicio, catálogo provisional)
+    └── pages/               → páginas simples sin funcionalidad propia (inicio)
 ```
 
 Dentro de cada `features/<x>/`: `api.ts` (tipos y llamadas HTTP), `labels.ts` (textos de los enums) y los componentes. Los tests van junto al archivo que prueban (`scan.ts` → `scan.test.ts`).

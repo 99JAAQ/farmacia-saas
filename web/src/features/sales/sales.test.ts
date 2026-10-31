@@ -14,6 +14,8 @@ const acetaminofen: Product = {
   pharmaceuticalForm: null,
   sanitaryRegistration: null,
   categoryId: null,
+  vatRate: 'Exempt',
+  isActive: true,
   saleUnits: [
     { id: 'box', name: 'Caja x30', conversionFactor: 30, price: 12_000, barcode: '7702057000017' },
     { id: 'blister', name: 'Blíster x10', conversionFactor: 10, price: 4_500, barcode: null },
