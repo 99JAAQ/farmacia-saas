@@ -275,6 +275,25 @@ public sealed class InMemoryCustomerRepository : ICustomerRepository
     public Task<Customer?> GetByIdAsync(Guid pharmacyId, Guid customerId, CancellationToken cancellationToken) =>
         Task.FromResult(Items.SingleOrDefault(c => c.PharmacyId == pharmacyId && c.Id == customerId));
 
+    public Task<IReadOnlyList<Customer>> GetByIdsAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> customerIds, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Customer>>(Items.Where(c => c.PharmacyId == pharmacyId && customerIds.Contains(c.Id)).ToList());
+
+    /// <summary>Plain "contains" on the name: accent-insensitivity is tested against SQL Server.</summary>
+    public Task<IReadOnlyList<Customer>> SearchAsync(Guid pharmacyId, string? search, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Customer>>(Items
+            .Where(c => c.PharmacyId == pharmacyId
+                        && (string.IsNullOrWhiteSpace(search)
+                            || c.FullName.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+                            || c.DocumentNumber == search.Trim()))
+            .OrderBy(c => c.FullName)
+            .Take(take)
+            .ToList());
+
+    public Task<bool> DocumentExistsAsync(
+        Guid pharmacyId, DocumentType documentType, string documentNumber, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.Any(c => c.PharmacyId == pharmacyId && c.DocumentType == documentType && c.DocumentNumber == documentNumber));
+
     public void Add(Customer customer) => Items.Add(customer);
 }
 
@@ -284,6 +303,27 @@ public sealed class InMemoryCreditAccountRepository : ICreditAccountRepository
 
     public Task<CreditAccount?> GetByCustomerAsync(Guid pharmacyId, Guid customerId, CancellationToken cancellationToken) =>
         Task.FromResult(Items.SingleOrDefault(a => a.PharmacyId == pharmacyId && a.CustomerId == customerId));
+
+    public Task<IReadOnlyList<CreditAccount>> GetByCustomersAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> customerIds, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CreditAccount>>(Items.Where(a => a.PharmacyId == pharmacyId && customerIds.Contains(a.CustomerId)).ToList());
+
+    public Task<IReadOnlyList<CreditAccount>> ListDebtorsAsync(Guid pharmacyId, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CreditAccount>>(Items
+            .Where(a => a.PharmacyId == pharmacyId && a.Balance > 0)
+            .OrderBy(a => a.DebtSince)
+            .Take(take)
+            .ToList());
+
+    /// <summary>The real repository reads saved entries; here they are still pending on the account, in order.</summary>
+    public Task<IReadOnlyList<CreditEntry>> ListEntriesAsync(
+        Guid pharmacyId, Guid creditAccountId, int take, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CreditEntry>>(Items
+            .Where(a => a.PharmacyId == pharmacyId && a.Id == creditAccountId)
+            .SelectMany(a => a.PendingEntries)
+            .Reverse()
+            .Take(take)
+            .ToList());
 
     public void Add(CreditAccount account) => Items.Add(account);
 }

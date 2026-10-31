@@ -171,9 +171,26 @@ Ver [ADR 0010](adr/0010-fiado-con-cuenta-cupo-y-abonos.md).
 
 El tiquete (`SaleDto`) trae `CustomerName` y `CreditAmount`; el comprobante de devolución, `CreditedToAccount` y `CashRefund`.
 
-**Pendiente en próximos pasos:**
-- la administración (crear clientes, abrir la cuenta con su cupo, cambiar el cupo, suspender, estado de cuenta, deudores) y los endpoints (5d);
-- las pantallas (5e).
+**La administración** (solo el dueño, política `ManageCredit`): `CreateCustomer` (documento repetido = 409), `OpenCreditAccount` (una cuenta por cliente; la segunda = 409), `ChangeCreditLimit`, `SetCreditSuspended`, `ListDebtors` (quien debe, la deuda más vieja primero, con los días que lleva). El cajero (`OperateCash`) busca clientes (`SearchCustomers`, con su cupo disponible) y ve el estado de cuenta (`GetCreditStatement`: saldo y movimientos, el más reciente primero). Los días de deuda se cuentan con la fecha de Colombia (`IClock`), no la del servidor.
+
+**Endpoints:**
+
+| Endpoint | Política | Qué hace |
+|---|---|---|
+| `GET /api/customers?search=` | `OperateCash` | Busca por nombre o documento, con el fiado de cada uno |
+| `GET /api/customers/{id}` | `OperateCash` | Un cliente con su fiado |
+| `POST /api/customers` | `ManageCredit` | Registra un cliente (201) |
+| `GET /api/customers/{id}/credit` | `OperateCash` | Estado de cuenta |
+| `POST /api/customers/{id}/credit` | `ManageCredit` | Habilita el fiado con un cupo (201) |
+| `PUT /api/customers/{id}/credit/limit` | `ManageCredit` | Cambia el cupo (204) |
+| `POST /api/customers/{id}/credit/suspend` y `/resume` | `ManageCredit` | Suspende o reanuda (204) |
+| `GET /api/customers/debtors` | `ManageCredit` | Quién debe |
+| `POST /api/credit-payments` | `OperateCash` | Abono en el turno propio; 201 con el comprobante completo |
+| `GET /api/credit-payments/{id}` | `OperateCash` | Reimprime el comprobante |
+
+`POST /api/sales` recibe `customerId` para fiar.
+
+**Pendiente en próximos pasos:** las pantallas (5e).
 
 ## Colombia en el código
 

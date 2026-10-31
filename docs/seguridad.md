@@ -72,7 +72,8 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | *(fallback)* | Cualquier usuario autenticado | Todo endpoint sin `[AllowAnonymous]` |
 | `ManageCatalog` | Dueño, bodeguero | Crear productos; proveedores |
 | `ReceivePurchases` | Dueño, bodeguero | Todo `/api/purchases`, incluida la lectura, porque muestra costos |
-| `OperateCash` | Dueño, cajero | Todo `/api/cash-sessions`, `/api/sales` y `/api/sale-returns` |
+| `OperateCash` | Dueño, cajero | Todo `/api/cash-sessions`, `/api/sales`, `/api/sale-returns` y `/api/credit-payments`; buscar clientes y ver su estado de cuenta en `/api/customers` |
+| `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
 
 - **La fallback policy exige estar autenticado en todo endpoint.** Un controller que olvide `[Authorize]` queda protegido, no expuesto. Los únicos anónimos son `/health`, `login`, `refresh` y `logout` (y la documentación OpenAPI en Development). `SecurityConventionTests` falla si se quita la fallback policy o si aparece un endpoint anónimo nuevo: agregar uno debe ser una decisión consciente.
 - **La política dice quién puede usar el recurso; el caso de uso dice qué puede tocar cada uno.** Por ejemplo, `OperateCash` deja entrar a cualquier cajero a la caja, pero solo quien abrió un turno puede registrar movimientos en él. Eso depende de datos y lo decide el handler, que lanza `ForbiddenException` (403).

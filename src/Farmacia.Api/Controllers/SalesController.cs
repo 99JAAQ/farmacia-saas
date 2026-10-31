@@ -55,13 +55,15 @@ public sealed class SalesController(ISender sender) : ControllerBase
     public async Task<IActionResult> Register(RegisterSaleRequest request, CancellationToken cancellationToken)
     {
         var ticket = await sender.Send(
-            new RegisterSaleCommand(request.Lines, request.Payments, request.PrescriptionChecked), cancellationToken);
+            new RegisterSaleCommand(request.Lines, request.Payments, request.PrescriptionChecked, request.CustomerId), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = ticket.Id }, ticket);
     }
 }
 
 /// <param name="Payments">For cash, the amount the customer handed over; the change is computed.</param>
+/// <param name="CustomerId">Required to take part of the sale on credit ("Credit" payment).</param>
 public sealed record RegisterSaleRequest(
     IReadOnlyList<RegisterSaleLine> Lines,
     IReadOnlyList<RegisterSalePayment> Payments,
-    bool PrescriptionChecked);
+    bool PrescriptionChecked,
+    Guid? CustomerId = null);

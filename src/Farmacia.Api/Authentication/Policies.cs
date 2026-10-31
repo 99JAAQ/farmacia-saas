@@ -20,6 +20,12 @@ public static class Policies
     /// <summary>Open, operate and close the cash register's shifts, and sell. Who may touch which shift is a use-case rule.</summary>
     public const string OperateCash = nameof(OperateCash);
 
+    /// <summary>
+    /// Give credit ("fiado"): register customers, open their account, set the limit, suspend it, see who owes.
+    /// Cashiers sell on credit and receive payments (OperateCash), but never decide who gets credit or how much.
+    /// </summary>
+    public const string ManageCredit = nameof(ManageCredit);
+
     internal static void Configure(AuthorizationOptions options)
     {
         // Every endpoint requires a valid token unless it says [AllowAnonymous]:
@@ -29,5 +35,6 @@ public static class Policies
         options.AddPolicy(ManageCatalog, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(OperateCash, policy => policy.RequireRole(Roles.Owner, Roles.Cashier));
+        options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
     }
 }

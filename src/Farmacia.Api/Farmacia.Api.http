@@ -259,8 +259,70 @@ Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
 
 ###
 
+### ---------- Credit ("fiado"): the owner decides, the cashier sells and receives payments ----------
+
+# The owner registers the customer (a cashier gets 403). A repeated document: 409.
+# @name createCustomer
+POST {{Farmacia.Api_HostAddress}}/api/customers
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "fullName": "Doña Rosa", "documentType": "CitizenshipCard", "documentNumber": "41234567", "phone": "3001234567" }
+
+###
+
+# ...and enables credit with a limit of 50.000. Expect 201.
+POST {{Farmacia.Api_HostAddress}}/api/customers/{{createCustomer.response.body.$.id}}/credit
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "limit": 50000 }
+
+###
+
+# The cashier finds the customer (by name or document) and sees what is available.
+GET {{Farmacia.Api_HostAddress}}/api/customers?search=41234567
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+
+###
+
+# 1 box on credit. Over the limit: 400 "tiene disponibles…"; a customer without credit: 400.
+POST {{Farmacia.Api_HostAddress}}/api/sales
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "lines": [{ "productId": "{{productId}}", "saleUnitId": "{{saleUnitId}}", "quantity": 1 }],
+  "payments": [{ "method": "Credit", "amount": 12000 }],
+  "prescriptionChecked": false,
+  "customerId": "{{createCustomer.response.body.$.id}}"
+}
+
+###
+
+# A payment ("abono") of 5.000 in cash: it enters this shift's drawer. The voucher says what is still owed (7.000).
+POST {{Farmacia.Api_HostAddress}}/api/credit-payments
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "customerId": "{{createCustomer.response.body.$.id}}", "method": "Cash", "amount": 5000 }
+
+###
+
+# The customer's statement, newest first.
+GET {{Farmacia.Api_HostAddress}}/api/customers/{{createCustomer.response.body.$.id}}/credit
+Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
+
+###
+
+# The owner's list of who owes, the oldest debt first.
+GET {{Farmacia.Api_HostAddress}}/api/customers/debtors
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
 # Close with the cash counted by hand: the answer shows the expected cash (92.000, plus 14.000 if you ran the sale
-# above, minus 12.000 if you ran the return) and the difference.
+# above, minus 12.000 if you ran the return, plus 5.000 if you ran the credit payment) and the difference.
 POST {{Farmacia.Api_HostAddress}}/api/cash-sessions/{{openShift.response.body.$.id}}/close
 Authorization: Bearer {{loginCashier.response.body.$.accessToken}}
 Content-Type: application/json
