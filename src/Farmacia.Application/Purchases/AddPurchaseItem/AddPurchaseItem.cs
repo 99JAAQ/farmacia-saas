@@ -33,6 +33,9 @@ public sealed class AddPurchaseItemHandler(
         var product = await products.GetByIdAsync(pharmacyId, command.ProductId, cancellationToken)
             ?? throw new ValidationException("El producto indicado no existe.");
 
+        if (!product.IsActive)
+            throw new ValidationException($"{product.Name} está inactivo: no se compra. Reactívelo en el catálogo si vuelve a manejarse.");
+
         var saleUnit = product.SaleUnits.SingleOrDefault(u => u.Id == command.SaleUnitId)
             ?? throw new ValidationException($"La presentación indicada no pertenece a {product.Name}.");
 

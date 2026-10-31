@@ -70,7 +70,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | Política | Roles | Endpoints |
 |---|---|---|
 | *(fallback)* | Cualquier usuario autenticado | Todo endpoint sin `[AllowAnonymous]` |
-| `ManageCatalog` | Dueño, bodeguero | Crear productos; proveedores |
+| `ManageCatalog` | Dueño, bodeguero | Crear y editar productos y presentaciones, desactivarlos, el catálogo con stock y los lotes con su costo, crear categorías; proveedores |
 | `ReceivePurchases` | Dueño, bodeguero | Todo `/api/purchases`, incluida la lectura, porque muestra costos |
 | `OperateCash` | Dueño, cajero | Todo `/api/cash-sessions`, `/api/sales`, `/api/sale-returns` y `/api/credit-payments`; buscar clientes y ver su estado de cuenta en `/api/customers` |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |

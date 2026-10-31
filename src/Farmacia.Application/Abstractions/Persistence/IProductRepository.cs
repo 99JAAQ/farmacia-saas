@@ -14,10 +14,10 @@ public interface IProductRepository
 
     /// <summary>
     /// By name or active ingredient (ignoring case and accents) or by exact barcode, alphabetically, with sale units.
-    /// Empty search: the first ones.
+    /// Empty search: the first ones. Discontinued (inactive) products only if asked: the POS and purchases never offer them.
     /// </summary>
     Task<IReadOnlyList<Product>> SearchAsync(
-        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken);
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken, bool includeInactive = false);
 
     /// <summary>Returns which of the given barcodes are already used by any product of the pharmacy.</summary>
     Task<IReadOnlyList<string>> GetExistingBarcodesAsync(

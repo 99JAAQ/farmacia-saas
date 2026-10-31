@@ -108,6 +108,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return (product.Id, box.Id);
     }
 
+    /// <summary>A batch received on 1 Jan 2026 (so it can already be expired today), in base units.</summary>
+    public async Task SeedBatchAsync(Guid pharmacyId, Guid productId, string lot, DateOnly expiration, int quantity)
+    {
+        var batch = Batch.Receive(pharmacyId, productId, lot, expiration, quantity, 250m,
+            new DateTimeOffset(2026, 1, 1, 9, 0, 0, TimeSpan.FromHours(-5)));
+
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
+        db.Batches.Add(batch);
+        await db.SaveChangesAsync();
+    }
+
     /// <summary>
     /// A pharmacy of its own, for tests that need the register: each pharmacy has a single open shift, so tests
     /// sharing pharmacy A would block each other.

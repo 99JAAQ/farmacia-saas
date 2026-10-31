@@ -38,9 +38,9 @@ public sealed class InMemoryProductRepository : IProductRepository
 
     // Plain case-insensitive "contains": accent-insensitivity depends on SQL Server and is tested in the API tests.
     public Task<IReadOnlyList<Product>> SearchAsync(
-        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken) =>
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken, bool includeInactive = false) =>
         Task.FromResult<IReadOnlyList<Product>>(Items
-            .Where(p => p.PharmacyId == pharmacyId)
+            .Where(p => p.PharmacyId == pharmacyId && (includeInactive || p.IsActive))
             .Where(p => string.IsNullOrWhiteSpace(search) || p.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase))
             .OrderBy(p => p.Name)
             .Take(take)
@@ -69,6 +69,14 @@ public sealed class InMemoryCategoryRepository : ICategoryRepository
 
     public Task<bool> ExistsAsync(Guid pharmacyId, Guid categoryId, CancellationToken cancellationToken) =>
         Task.FromResult(Items.Any(c => c.PharmacyId == pharmacyId && c.Id == categoryId));
+
+    public Task<IReadOnlyList<Category>> ListAsync(Guid pharmacyId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Category>>(Items.Where(c => c.PharmacyId == pharmacyId).OrderBy(c => c.Name).ToList());
+
+    public Task<bool> NameExistsAsync(Guid pharmacyId, string name, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.Any(c => c.PharmacyId == pharmacyId && string.Equals(c.Name, name.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+    public void Add(Category category) => Items.Add(category);
 }
 
 public sealed class InMemoryPurchaseRepository : IPurchaseRepository
@@ -136,6 +144,24 @@ public sealed class InMemoryBatchRepository : IBatchRepository
     public Task<IReadOnlyList<Batch>> GetByIdsAsync(
         Guid pharmacyId, IReadOnlyCollection<Guid> batchIds, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Batch>>(Items.Where(b => b.PharmacyId == pharmacyId && batchIds.Contains(b.Id)).ToList());
+
+    public Task<IReadOnlyList<ProductStock>> GetStockAsync(
+        Guid pharmacyId, IReadOnlyCollection<Guid> productIds, DateOnly today, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<ProductStock>>(Items
+            .Where(b => b.PharmacyId == pharmacyId && productIds.Contains(b.ProductId) && b.Quantity > 0)
+            .GroupBy(b => b.ProductId)
+            .Select(g => new ProductStock(
+                g.Key,
+                g.Where(b => !b.IsExpiredOn(today)).Sum(b => b.Quantity),
+                g.Where(b => b.IsExpiredOn(today)).Sum(b => b.Quantity),
+                g.Where(b => !b.IsExpiredOn(today)).Min(b => (DateOnly?)b.ExpirationDate)))
+            .ToList());
+
+    public Task<IReadOnlyList<Batch>> ListInStockByProductAsync(Guid pharmacyId, Guid productId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Batch>>(Items
+            .Where(b => b.PharmacyId == pharmacyId && b.ProductId == productId && b.Quantity > 0)
+            .OrderBy(b => b.ExpirationDate)
+            .ToList());
 
     public void Add(Batch batch) => Items.Add(batch);
 }

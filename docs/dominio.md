@@ -37,6 +37,19 @@ Un producto (p. ej. "Acetaminofén 500 mg") tiene una unidad base ("Tableta") y 
 - `UpdateSaleUnit` cambia una presentación: nombre, factor, precio y código de barras. El nombre y el código siguen siendo únicos dentro del producto (sin compararse consigo misma), y entre productos los protege el índice único de la base. Un precio nuevo aplica solo a las ventas siguientes, porque cada venta copió el suyo; un factor nuevo no altera el stock, porque está en unidades base.
 - `Deactivate`/`Activate`: un producto descontinuado se desactiva, nunca se borra, porque lotes y ventas lo referencian. Inactivo, la venta lo rechaza.
 
+**Casos de uso y endpoints del catálogo:** las búsquedas (`GET /api/products?search=`) devuelven solo productos activos, así el POS y las compras nunca ofrecen un descontinuado; `includeInactive=true` los incluye. `AddPurchaseItem` rechaza un producto inactivo. Un código de barras que ya usa otro producto es 409 (con un mensaje claro antes del índice único); una presentación puede conservar el suyo.
+
+| Endpoint | Política | Qué hace |
+|---|---|---|
+| `GET /api/products?search=&includeInactive=` | Autenticado | Búsqueda (POS, compras) |
+| `GET /api/products/catalog?search=&includeInactive=` | `ManageCatalog` | Catálogo con stock: unidades vendibles, vencidas y el vencimiento más próximo, con la fecha de Colombia |
+| `GET /api/products/{id}/batches` | `ManageCatalog` | Lotes con unidades, el que vence primero arriba, con su costo (el cajero no ve costos) |
+| `PUT /api/products/{id}` | `ManageCatalog` | Corrige los datos del producto |
+| `POST /api/products/{id}/sale-units` | `ManageCatalog` | Agrega una presentación (201) |
+| `PUT /api/products/{id}/sale-units/{saleUnitId}` | `ManageCatalog` | Cambia nombre, factor, precio o código |
+| `POST /api/products/{id}/deactivate` y `/activate` | `ManageCatalog` | Descontinúa o reactiva |
+| `GET /api/categories`, `POST /api/categories` | Autenticado / `ManageCatalog` | Categorías (el nombre es único sin distinguir mayúsculas) |
+
 ## Inventario: lotes y kardex
 
 - **Cada entrada de mercancía crea un `Batch`** con su número de lote, vencimiento, cantidad y costo por unidad base.

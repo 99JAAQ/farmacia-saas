@@ -15,6 +15,7 @@ public sealed record ProductDto(
     string? PharmaceuticalForm,
     string? SanitaryRegistration,
     Guid? CategoryId,
+    bool IsActive,
     IReadOnlyList<SaleUnitDto> SaleUnits)
 {
     public static ProductDto From(Product product) => new(
@@ -28,6 +29,7 @@ public sealed record ProductDto(
         product.PharmaceuticalForm,
         product.SanitaryRegistration,
         product.CategoryId,
+        product.IsActive,
         product.SaleUnits
             .OrderByDescending(u => u.ConversionFactor)
             .Select(u => new SaleUnitDto(u.Id, u.Name, u.ConversionFactor, u.Price, u.Barcode))

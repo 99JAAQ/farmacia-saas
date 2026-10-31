@@ -101,6 +101,36 @@ Authorization: Bearer {{login.response.body.$.accessToken}}
 
 ###
 
+# ---------- Catalog (as the owner or the stock keeper) ----------
+
+# The catalog with stock: sellable and expired units, nearest expiration. includeInactive shows discontinued ones too.
+GET {{Farmacia.Api_HostAddress}}/api/products/catalog?includeInactive=true
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# A product's batches, the first to expire first, with their cost (a cashier gets 403).
+GET {{Farmacia.Api_HostAddress}}/api/products/{{createProduct.response.body.$.id}}/batches
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# A new price for a presentation: the next sales charge it; past tickets keep theirs. Expect 204.
+# Get the sale unit Id with GET /api/products/{id}.
+PUT {{Farmacia.Api_HostAddress}}/api/products/{{createProduct.response.body.$.id}}/sale-units/{{saleUnitId}}
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "name": "Caja x30", "conversionFactor": 30, "price": 13000, "barcode": null }
+
+###
+
+# Discontinue it: no longer in the POS search, not sold, not bought. /activate brings it back.
+POST {{Farmacia.Api_HostAddress}}/api/products/{{createProduct.response.body.$.id}}/deactivate
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
 # ---------- Purchases (log in above as dueno@ or bodega@; a cashier gets 403) ----------
 # Fill these with Ids from your database (the dev seeder creates "Distribuidora de Desarrollo"):
 #   SELECT Id FROM Suppliers;   SELECT Id, ProductId, Name FROM SaleUnits;

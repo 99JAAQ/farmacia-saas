@@ -19,9 +19,11 @@ internal sealed class ProductRepository(FarmaciaDbContext db) : IProductReposito
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<Product>> SearchAsync(
-        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken)
+        Guid pharmacyId, string? search, int take, CancellationToken cancellationToken, bool includeInactive = false)
     {
-        var query = db.Products.Include(p => p.SaleUnits).Where(p => p.PharmacyId == pharmacyId);
+        var query = db.Products
+            .Include(p => p.SaleUnits)
+            .Where(p => p.PharmacyId == pharmacyId && (includeInactive || p.IsActive));
 
         if (!string.IsNullOrWhiteSpace(search))
         {
