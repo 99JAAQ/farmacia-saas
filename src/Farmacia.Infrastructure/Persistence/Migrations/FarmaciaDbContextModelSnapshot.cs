@@ -359,6 +359,9 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid?>("PerformedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("PharmacyId")
                         .HasColumnType("uniqueidentifier");
 
@@ -375,6 +378,8 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PerformedBy");
 
                     b.HasIndex("ProductId");
 
@@ -1390,6 +1395,11 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .HasForeignKey("BatchId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Farmacia.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PerformedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
                         .WithMany()

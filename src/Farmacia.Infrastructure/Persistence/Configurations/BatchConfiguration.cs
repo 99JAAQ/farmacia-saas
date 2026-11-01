@@ -1,5 +1,6 @@
 using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Products;
+using Farmacia.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -35,6 +36,8 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
     public void Configure(EntityTypeBuilder<StockMovement> builder)
     {
         builder.Property(m => m.Notes).HasMaxLength(500);
+
+        builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(m => m.PerformedBy).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Batch>()
             .WithMany()

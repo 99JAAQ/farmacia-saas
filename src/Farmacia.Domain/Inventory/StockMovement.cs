@@ -11,7 +11,7 @@ public class StockMovement : TenantEntity
 
     internal StockMovement(
         Batch batch, StockMovementType type, int quantityChange,
-        DateTimeOffset occurredAt, Guid? referenceId, string? notes)
+        DateTimeOffset occurredAt, Guid? referenceId, string? notes, Guid? performedBy)
         : base(batch.PharmacyId)
     {
         BatchId = batch.Id;
@@ -22,6 +22,7 @@ public class StockMovement : TenantEntity
         OccurredAt = occurredAt;
         ReferenceId = referenceId;
         Notes = notes;
+        PerformedBy = performedBy;
     }
 
     public Guid BatchId { get; private init; }
@@ -38,4 +39,10 @@ public class StockMovement : TenantEntity
     public Guid? ReferenceId { get; private init; }
 
     public string? Notes { get; private init; }
+
+    /// <summary>
+    /// The user who caused it: who received, sold, refunded, wrote off or adjusted. For a write-off or an adjustment
+    /// it is the first thing the owner asks. Null in movements recorded before it existed.
+    /// </summary>
+    public Guid? PerformedBy { get; private init; }
 }

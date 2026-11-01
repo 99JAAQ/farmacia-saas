@@ -56,8 +56,11 @@ public class PurchaseHandlersTests
                 new DateOnly(2027, 12, 31)),
             CancellationToken.None);
 
+    /// <summary>The stock keeper who receives the goods: their Id goes into each batch's kardex entry.</summary>
+    private static readonly Guid Keeper = Guid.CreateVersion7();
+
     private Task<PurchaseDto> ConfirmAsync(Guid purchaseId, decimal printedTotal) =>
-        new ConfirmPurchaseHandler(_purchases, _pharmacies, _batches, _unitOfWork, Current(), new FakeClock(Now), Reader())
+        new ConfirmPurchaseHandler(_purchases, _pharmacies, _batches, _unitOfWork, Current(), new FakeCurrentUser(Keeper), new FakeClock(Now), Reader())
             .Handle(new ConfirmPurchaseCommand(purchaseId, printedTotal), CancellationToken.None);
 
     // ---------- Draft ----------
@@ -169,7 +172,7 @@ public class PurchaseHandlersTests
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             new ConfirmPurchaseHandler(_purchases, _pharmacies, _batches, _unitOfWork, Current(Guid.CreateVersion7()),
-                    new FakeClock(Now), Reader())
+                    new FakeCurrentUser(Keeper), new FakeClock(Now), Reader())
                 .Handle(new ConfirmPurchaseCommand(purchaseId, 90_000m), CancellationToken.None));
         Assert.Empty(_batches.Items);
     }

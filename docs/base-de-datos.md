@@ -85,10 +85,12 @@ erDiagram
         guid Id PK
         guid BatchId FK
         guid ProductId FK
-        int Type "1 compra, 2 venta, 3 ajuste, 4 baja"
+        int Type "1 compra, 2 venta, 3 ajuste, 4 baja, 5 devolución"
         int QuantityChange "+ entra / - sale"
         int BalanceAfter
-        guid ReferenceId "compra o venta de origen"
+        guid ReferenceId "compra, venta o devolución de origen"
+        guid PerformedBy FK "quién lo causó (nulo en los antiguos)"
+        string Notes "motivo de un ajuste"
     }
     Suppliers {
         guid Id PK
@@ -329,6 +331,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddCustomerAndCreditToSales` | `Sales.CustomerId` (el cliente de una venta fiada) y `SaleReturns.CreditedToAccount` (lo que una devolución descontó de la deuda) |
 | `AddCreditAccounts` | Cuentas de fiado, sus movimientos y los abonos |
 | `AddProductIsActive` | `Products.IsActive` (editada a mano: `defaultValue: true`, para no desactivar los productos existentes) |
+| `AddStockMovementPerformedBy` | `StockMovements.PerformedBy`: quién causó cada movimiento del kardex (admite nulos para los anteriores) |
 
 Comandos (desde la raíz del repo):
 

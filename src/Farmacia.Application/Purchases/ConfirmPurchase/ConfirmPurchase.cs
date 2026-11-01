@@ -15,6 +15,7 @@ public sealed class ConfirmPurchaseHandler(
     IBatchRepository batches,
     IUnitOfWork unitOfWork,
     ICurrentPharmacy currentPharmacy,
+    ICurrentUser currentUser,
     IClock clock,
     PurchaseReader reader) : IRequestHandler<ConfirmPurchaseCommand, PurchaseDto>
 {
@@ -27,7 +28,7 @@ public sealed class ConfirmPurchaseHandler(
 
         // A VAT-responsible pharmacy recovers the purchase VAT, so it is not part of the inventory cost.
         var receivedBatches = purchase.Confirm(
-            command.PrintedInvoiceTotal, vatIsPartOfCost: !pharmacy.IsVatResponsible, clock.Now);
+            command.PrintedInvoiceTotal, vatIsPartOfCost: !pharmacy.IsVatResponsible, clock.Now, currentUser.UserId);
 
         foreach (var batch in receivedBatches)
             batches.Add(batch);

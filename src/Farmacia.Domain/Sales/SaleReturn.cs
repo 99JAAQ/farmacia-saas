@@ -127,7 +127,7 @@ public class SaleReturn : TenantEntity
         // Everything is valid: now the units go back into their batches.
         foreach (var (item, batch, quantity) in restocks)
         {
-            batch.Restock(quantity, returnedAt, saleReturn.Id);
+            batch.Restock(quantity, returnedAt, saleReturn.Id, returnedBy);
             item.PutBackInto(batch.Id, quantity, batch.UnitCost);
         }
 

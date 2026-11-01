@@ -131,7 +131,9 @@ public class Purchase : TenantEntity
     /// <param name="printedInvoiceTotal">The total printed on the paper invoice, typed in to catch typing errors.</param>
     /// <param name="vatIsPartOfCost">False when the pharmacy is VAT-responsible: purchase VAT is recovered, not a cost.</param>
     /// <param name="receivedAt">Local Colombian time.</param>
-    public IReadOnlyList<Batch> Confirm(decimal printedInvoiceTotal, bool vatIsPartOfCost, DateTimeOffset receivedAt)
+    /// <param name="confirmedBy">Who received the goods: it goes into each batch's kardex entry.</param>
+    public IReadOnlyList<Batch> Confirm(
+        decimal printedInvoiceTotal, bool vatIsPartOfCost, DateTimeOffset receivedAt, Guid? confirmedBy = null)
     {
         EnsureDraft();
 
@@ -166,7 +168,7 @@ public class Purchase : TenantEntity
                 var unitCost = Math.Round(cost / line.Item.BaseUnits, 4, MidpointRounding.AwayFromZero);
                 var batch = Batch.Receive(
                     PharmacyId, line.Item.ProductId, line.Item.LotNumber, line.Item.ExpirationDate,
-                    line.Item.BaseUnits, unitCost, receivedAt, purchaseId: Id);
+                    line.Item.BaseUnits, unitCost, receivedAt, purchaseId: Id, receivedBy: confirmedBy);
                 return (line.Item, Batch: batch, UnitCost: unitCost);
             })
             .ToList();

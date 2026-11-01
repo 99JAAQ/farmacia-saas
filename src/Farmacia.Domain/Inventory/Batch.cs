@@ -40,7 +40,7 @@ public class Batch : TenantEntity
 
     public static Batch Receive(
         Guid pharmacyId, Guid productId, string lotNumber, DateOnly expirationDate,
-        int quantity, decimal unitCost, DateTimeOffset receivedAt, Guid? purchaseId = null)
+        int quantity, decimal unitCost, DateTimeOffset receivedAt, Guid? purchaseId = null, Guid? receivedBy = null)
     {
         if (productId == Guid.Empty)
             throw new DomainException("El producto es obligatorio.");
@@ -63,11 +63,11 @@ public class Batch : TenantEntity
         if (batch.IsExpiredOn(DateOf(receivedAt)))
             throw new DomainException($"No se puede recibir el lote {batch.LotNumber}: está vencido.");
 
-        batch.ApplyChange(StockMovementType.Purchase, quantity, receivedAt, purchaseId, notes: null);
+        batch.ApplyChange(StockMovementType.Purchase, quantity, receivedAt, purchaseId, notes: null, receivedBy);
         return batch;
     }
 
-    public StockMovement Sell(int quantity, DateTimeOffset soldAt, Guid saleId)
+    public StockMovement Sell(int quantity, DateTimeOffset soldAt, Guid saleId, Guid? soldBy = null)
     {
         if (IsExpiredOn(DateOf(soldAt)))
             throw new DomainException($"El lote {LotNumber} está vencido y no se puede vender.");
@@ -79,14 +79,14 @@ public class Batch : TenantEntity
             throw new DomainException(
                 $"Stock insuficiente en el lote {LotNumber}: disponible {Quantity}, solicitado {quantity}.");
 
-        return ApplyChange(StockMovementType.Sale, -quantity, soldAt, saleId, notes: null);
+        return ApplyChange(StockMovementType.Sale, -quantity, soldAt, saleId, notes: null, soldBy);
     }
 
     /// <summary>
     /// Units a customer returned go back into this batch. An expired batch does not take them back: they could not be
     /// sold again, so the return must discard them.
     /// </summary>
-    public StockMovement Restock(int quantity, DateTimeOffset returnedAt, Guid saleReturnId)
+    public StockMovement Restock(int quantity, DateTimeOffset returnedAt, Guid saleReturnId, Guid? returnedBy = null)
     {
         if (quantity <= 0)
             throw new DomainException("La cantidad devuelta debe ser mayor que cero.");
@@ -94,10 +94,10 @@ public class Batch : TenantEntity
         if (IsExpiredOn(DateOf(returnedAt)))
             throw new DomainException($"El lote {LotNumber} está vencido: las unidades devueltas no pueden volver al inventario.");
 
-        return ApplyChange(StockMovementType.CustomerReturn, quantity, returnedAt, saleReturnId, notes: null);
+        return ApplyChange(StockMovementType.CustomerReturn, quantity, returnedAt, saleReturnId, notes: null, returnedBy);
     }
 
-    public StockMovement WriteOffExpired(DateTimeOffset writtenOffAt)
+    public StockMovement WriteOffExpired(DateTimeOffset writtenOffAt, Guid? writtenOffBy = null)
     {
         if (!IsExpiredOn(DateOf(writtenOffAt)))
             throw new DomainException($"El lote {LotNumber} no está vencido.");
@@ -105,11 +105,11 @@ public class Batch : TenantEntity
         if (Quantity == 0)
             throw new DomainException($"El lote {LotNumber} no tiene unidades para dar de baja.");
 
-        return ApplyChange(StockMovementType.ExpiredWriteOff, -Quantity, writtenOffAt, referenceId: null, notes: null);
+        return ApplyChange(StockMovementType.ExpiredWriteOff, -Quantity, writtenOffAt, referenceId: null, notes: null, writtenOffBy);
     }
 
     /// <summary>Sets the quantity to what was physically counted, recording the difference.</summary>
-    public StockMovement AdjustToCount(int countedQuantity, string reason, DateTimeOffset adjustedAt)
+    public StockMovement AdjustToCount(int countedQuantity, string reason, DateTimeOffset adjustedAt, Guid? adjustedBy = null)
     {
         if (countedQuantity < 0)
             throw new DomainException("La cantidad contada no puede ser negativa.");
@@ -120,15 +120,15 @@ public class Batch : TenantEntity
         if (change == 0)
             throw new DomainException($"El conteo coincide con el stock del lote {LotNumber}; no hay nada que ajustar.");
 
-        return ApplyChange(StockMovementType.Adjustment, change, adjustedAt, referenceId: null, notes);
+        return ApplyChange(StockMovementType.Adjustment, change, adjustedAt, referenceId: null, notes, adjustedBy);
     }
 
     private StockMovement ApplyChange(
-        StockMovementType type, int change, DateTimeOffset occurredAt, Guid? referenceId, string? notes)
+        StockMovementType type, int change, DateTimeOffset occurredAt, Guid? referenceId, string? notes, Guid? performedBy)
     {
         Quantity += change;
 
-        var movement = new StockMovement(this, type, change, occurredAt, referenceId, notes);
+        var movement = new StockMovement(this, type, change, occurredAt, referenceId, notes, performedBy);
         _pendingMovements.Add(movement);
         return movement;
     }

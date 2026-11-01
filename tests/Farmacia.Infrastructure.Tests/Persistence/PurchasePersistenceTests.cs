@@ -1,4 +1,6 @@
+using Farmacia.Application.Abstractions;
 using Farmacia.Application.Abstractions.Persistence;
+using Farmacia.Application.Authorization;
 using Farmacia.Application.Common.Exceptions;
 using Farmacia.Application.Purchases.AddPurchaseItem;
 using Farmacia.Application.Purchases.ConfirmPurchase;
@@ -9,6 +11,7 @@ using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Purchases;
 using Farmacia.Domain.Suppliers;
+using Farmacia.Infrastructure.Identity;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +22,8 @@ namespace Farmacia.Infrastructure.Tests.Persistence;
 [Collection(SqlServerCollection.Name)]
 public sealed class PurchasePersistenceTests(SqlServerFixture fixture) : IAsyncLifetime
 {
-    private readonly ServiceProvider _services = InfrastructureServices.Build(fixture);
+    private ServiceProvider _services = null!;
+    private Guid _keeperId;
     private Supplier _supplier = null!;
     private Product _product = null!;
     private SaleUnit _box = null!;
@@ -32,9 +36,16 @@ public sealed class PurchasePersistenceTests(SqlServerFixture fixture) : IAsyncL
         _product = Product.Create(fixture.PharmacyId, $"Acetaminofén {Guid.CreateVersion7():N}", "Tableta", false);
         _box = _product.AddSaleUnit("Caja x30", 30, 12_000m);
 
+        // A real user: the kardex entry points to whoever received the goods (a foreign key to AspNetUsers).
+        var keeper = new ApplicationUser { FullName = "Bodeguero", PharmacyId = fixture.PharmacyId };
+
         await using var db = fixture.CreateContext();
         db.AddRange(_supplier, _product);
+        db.Users.Add(keeper);
         await db.SaveChangesAsync();
+
+        _keeperId = keeper.Id;
+        _services = InfrastructureServices.Build(fixture, currentUser: new FixedUser(keeper.Id));
     }
 
     public Task DisposeAsync() => _services.DisposeAsync().AsTask();
@@ -80,6 +91,7 @@ public sealed class PurchasePersistenceTests(SqlServerFixture fixture) : IAsyncL
         Assert.Equal(241.6667m, batch.UnitCost);
         Assert.Equal(StockMovementType.Purchase, movement.Type);
         Assert.Equal(purchaseId, movement.ReferenceId);
+        Assert.Equal(_keeperId, movement.PerformedBy);
     }
 
     [Fact]
@@ -141,5 +153,12 @@ public sealed class PurchasePersistenceTests(SqlServerFixture fixture) : IAsyncL
 
         await using var verify = fixture.CreateContext();
         Assert.False(await verify.Set<PurchaseItem>().AnyAsync(i => i.Id == itemId));
+    }
+
+    private sealed class FixedUser(Guid userId) : ICurrentUser
+    {
+        public Guid UserId { get; } = userId;
+
+        public bool IsInRole(string role) => role == Roles.StockKeeper;
     }
 }

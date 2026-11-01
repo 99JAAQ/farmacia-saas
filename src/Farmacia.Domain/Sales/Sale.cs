@@ -102,7 +102,7 @@ public class Sale : TenantEntity
         foreach (var (line, item) in priced)
             foreach (var allocation in FefoAllocator.Allocate(line.Batches, item.BaseUnits, DateOf(soldAt)))
             {
-                allocation.Batch.Sell(allocation.Quantity, soldAt, sale.Id);
+                allocation.Batch.Sell(allocation.Quantity, soldAt, sale.Id, soldBy);
                 item.TakeFrom(allocation.Batch.Id, allocation.Quantity, allocation.Batch.UnitCost);
             }
 

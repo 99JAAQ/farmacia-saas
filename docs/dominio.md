@@ -56,6 +56,7 @@ Un producto (p. ej. "Acetaminofén 500 mg") tiene una unidad base ("Tableta") y 
 - **Cada cambio de cantidad genera un `StockMovement`** (compra, venta, ajuste por conteo, baja por vencimiento) con el cambio y el saldo resultante. `Batch` deja los movimientos en `PendingMovements`, y `FarmaciaDbContext` los guarda en el **mismo `SaveChanges`** que el lote: el kardex nunca queda desfasado del stock.
 - **Un lote se vende hasta su fecha de vencimiento inclusive.** Desde el día siguiente está vencido: no se vende, solo se da de baja (`WriteOffExpired`).
 - **El stock nunca queda negativo en línea:** vender más de lo disponible lanza `DomainException`.
+- **Cada movimiento dice quién lo causó** (`PerformedBy`): las operaciones de `Batch` (`Receive`, `Sell`, `Restock`, `WriteOffExpired`, `AdjustToCount`) reciben el usuario, y la compra, la venta y la devolución pasan el suyo. Ver [ADR 0012](adr/0012-inventario-bajas-y-ajustes-por-lote.md).
 - **`FefoAllocator` solo planifica.** Recibe los lotes de un producto y la cantidad, y devuelve de qué lotes sacarla, empezando por el que vence primero. Quien vende aplica `Batch.Sell` a cada uno.
 
 ## Compras
