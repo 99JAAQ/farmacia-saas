@@ -5,6 +5,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { can } from '@/features/auth/permissions'
+import { useAuth } from '@/features/auth/useAuth'
+import { KardexTable } from '@/features/inventory/KardexTable'
 import { getProduct, productKeys, setProductActive, updateProduct, type Product } from '@/features/products/api'
 import { cn } from '@/lib/utils'
 import { BatchesTable } from './BatchesTable'
@@ -36,6 +39,8 @@ const detailsKey = (p: Product) =>
   ])
 
 function ProductView({ product }: { product: Product }) {
+  const { user } = useAuth()
+  const managesInventory = can(user, 'manageInventory')
   const queryClient = useQueryClient()
   const onSuccess = () => void queryClient.invalidateQueries({ queryKey: productKeys.all })
   const save = useMutation({ mutationFn: (details: Parameters<typeof updateProduct>[1]) => updateProduct(product.id, details), onSuccess })
@@ -90,6 +95,18 @@ function ProductView({ product }: { product: Product }) {
           <BatchesTable product={product} />
         </CardContent>
       </Card>
+
+      {managesInventory && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Movimientos</CardTitle>
+            <CardDescription>Cada entrada y salida de stock, la más reciente primero, con quién la hizo.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <KardexTable productId={product.id} baseUnitName={product.baseUnitName} />
+          </CardContent>
+        </Card>
+      )}
     </>
   )
 }

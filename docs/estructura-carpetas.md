@@ -122,7 +122,8 @@ web/
     │   ├── sales/           → POS: carrito (lógica pura + localStorage), pagos, tiquete imprimible
     │   ├── returns/         → devoluciones: borrador (lógica pura), pantalla, comprobante
     │   ├── customers/       → clientes y fiado: búsqueda, deudores, cupo, movimientos
-    │   └── catalog/         → catálogo: lista con stock, ficha del producto, presentaciones, lotes
+    │   ├── catalog/         → catálogo: lista con stock, ficha del producto, presentaciones, lotes
+    │   └── inventory/       → bajas de lotes vencidos, ajustes por conteo y kardex
     ├── lib/
     │   ├── api/http.ts      → cliente HTTP (token en memoria, refresh único)
     │   ├── format.ts        → dinero, fechas y horas en formato colombiano

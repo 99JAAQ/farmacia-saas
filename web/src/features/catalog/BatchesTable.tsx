@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { can } from '@/features/auth/permissions'
+import { useAuth } from '@/features/auth/useAuth'
+import { BatchActions } from '@/features/inventory/BatchActions'
 import { getProductBatches, productKeys, type Product } from '@/features/products/api'
 import { formatDate, formatMoney, todayLocal } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -10,6 +13,9 @@ import { daysUntil, expiringSoonDays, formatStock } from './stock'
 export function BatchesTable({ product }: { product: Product }) {
   const batches = useQuery({ queryKey: productKeys.batches(product.id), queryFn: ({ signal }) => getProductBatches(product.id, signal) })
   const today = todayLocal()
+  // Write-offs and counts are the owner's and the stock keeper's; the API enforces it (ManageInventory).
+  const { user } = useAuth()
+  const managesInventory = can(user, 'manageInventory')
 
   if (batches.isPending) return <p className="text-sm text-muted-foreground">Cargando…</p>
   if (batches.isError) return <p className="text-sm text-destructive">{batches.error.message}</p>
@@ -24,6 +30,7 @@ export function BatchesTable({ product }: { product: Product }) {
           <TableHead>Unidades</TableHead>
           <TableHead className="text-right">Costo por {product.baseUnitName.toLowerCase()}</TableHead>
           <TableHead>Recibido</TableHead>
+          {managesInventory && <TableHead className="w-0" />}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -50,6 +57,11 @@ export function BatchesTable({ product }: { product: Product }) {
               <TableCell className="text-right tabular-nums">{formatMoney(batch.unitCost)}</TableCell>
               {/* The API sends times with Colombia's offset (-05:00), so the first 10 characters are the local date. */}
               <TableCell>{formatDate(batch.receivedAt.slice(0, 10))}</TableCell>
+              {managesInventory && (
+                <TableCell>
+                  <BatchActions batch={batch} baseUnitName={product.baseUnitName} />
+                </TableCell>
+              )}
             </TableRow>
           )
         })}
