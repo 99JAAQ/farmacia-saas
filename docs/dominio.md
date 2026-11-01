@@ -57,6 +57,8 @@ Un producto (p. ej. "Acetaminofén 500 mg") tiene una unidad base ("Tableta") y 
 - **Un lote se vende hasta su fecha de vencimiento inclusive.** Desde el día siguiente está vencido: no se vende, solo se da de baja (`WriteOffExpired`).
 - **El stock nunca queda negativo en línea:** vender más de lo disponible lanza `DomainException`.
 - **Cada movimiento dice quién lo causó** (`PerformedBy`): las operaciones de `Batch` (`Receive`, `Sell`, `Restock`, `WriteOffExpired`, `AdjustToCount`) reciben el usuario, y la compra, la venta y la devolución pasan el suyo. Ver [ADR 0012](adr/0012-inventario-bajas-y-ajustes-por-lote.md).
+- **Bajas y ajustes** (política `ManageInventory`: dueño y bodeguero): `WriteOffExpiredBatch` saca todas las unidades de un lote vencido (con la fecha de Colombia: uno que vence hoy todavía se vende); `AdjustBatchToCount` deja un lote en lo contado, con motivo obligatorio. Si una venta toma el mismo lote al mismo tiempo, el `RowVersion` del lote hace que una de las dos reciba 409.
+- **El kardex por producto es una consulta de lectura** (`IKardexReader`, el lado "Q" de CQRS): trae los movimientos más recientes y les pone el número de lote, el documento de origen ("Venta N.º 120", "Compra FE-77", "Devolución N.º 5") y el nombre de quien lo hizo. **El saldo del producto tras cada movimiento se calcula hacia atrás desde el stock actual:** el movimiento más reciente dejó lo que hay hoy, y cada uno anterior, eso menos el cambio del siguiente. Funciona porque todo cambio de stock pasa por el kardex.
 - **`FefoAllocator` solo planifica.** Recibe los lotes de un producto y la cantidad, y devuelve de qué lotes sacarla, empezando por el que vence primero. Quien vende aplica `Batch.Sell` a cada uno.
 
 ## Compras

@@ -31,6 +31,9 @@ internal sealed class BatchRepository(FarmaciaDbContext db) : IBatchRepository
                 g.Where(b => b.ExpirationDate >= today).Min(b => (DateOnly?)b.ExpirationDate)))
             .ToListAsync(cancellationToken);
 
+    public Task<Batch?> GetByIdAsync(Guid pharmacyId, Guid batchId, CancellationToken cancellationToken) =>
+        db.Batches.SingleOrDefaultAsync(b => b.PharmacyId == pharmacyId && b.Id == batchId, cancellationToken);
+
     public async Task<IReadOnlyList<Batch>> ListInStockByProductAsync(
         Guid pharmacyId, Guid productId, CancellationToken cancellationToken) =>
         await db.Batches

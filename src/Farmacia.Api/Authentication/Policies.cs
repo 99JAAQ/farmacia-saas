@@ -26,6 +26,12 @@ public static class Policies
     /// </summary>
     public const string ManageCredit = nameof(ManageCredit);
 
+    /// <summary>
+    /// Write off expired batches, adjust batches to a physical count, and read the kardex. Every movement records who
+    /// did it, so the owner can review the stock keeper's write-offs and adjustments.
+    /// </summary>
+    public const string ManageInventory = nameof(ManageInventory);
+
     internal static void Configure(AuthorizationOptions options)
     {
         // Every endpoint requires a valid token unless it says [AllowAnonymous]:
@@ -36,5 +42,6 @@ public static class Policies
         options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(OperateCash, policy => policy.RequireRole(Roles.Owner, Roles.Cashier));
         options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
+        options.AddPolicy(ManageInventory, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
     }
 }

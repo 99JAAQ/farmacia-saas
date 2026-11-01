@@ -131,6 +131,31 @@ Authorization: Bearer {{login.response.body.$.accessToken}}
 
 ###
 
+# ---------- Inventory (as the owner or the stock keeper) ----------
+# Get a batch Id with GET /api/products/{id}/batches.
+@batchId = 00000000-0000-0000-0000-000000000000
+
+# Write off an expired batch: all its units. One that has not expired yet: 400 "no está vencido".
+POST {{Farmacia.Api_HostAddress}}/api/batches/{{batchId}}/write-off
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# Set a batch to what was counted on the shelf (base units), with the reason. Expect 204.
+POST {{Farmacia.Api_HostAddress}}/api/batches/{{batchId}}/adjust
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "countedQuantity": 38, "reason": "Dos tabletas dañadas" }
+
+###
+
+# The product's kardex, newest first: lot, document, who, and the product's balance after each movement.
+GET {{Farmacia.Api_HostAddress}}/api/products/{{createProduct.response.body.$.id}}/kardex
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
 # ---------- Purchases (log in above as dueno@ or bodega@; a cashier gets 403) ----------
 # Fill these with Ids from your database (the dev seeder creates "Distribuidora de Desarrollo"):
 #   SELECT Id FROM Suppliers;   SELECT Id, ProductId, Name FROM SaleUnits;

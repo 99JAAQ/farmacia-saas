@@ -157,6 +157,9 @@ public sealed class InMemoryBatchRepository : IBatchRepository
                 g.Where(b => !b.IsExpiredOn(today)).Min(b => (DateOnly?)b.ExpirationDate)))
             .ToList());
 
+    public Task<Batch?> GetByIdAsync(Guid pharmacyId, Guid batchId, CancellationToken cancellationToken) =>
+        Task.FromResult(Items.SingleOrDefault(b => b.PharmacyId == pharmacyId && b.Id == batchId));
+
     public Task<IReadOnlyList<Batch>> ListInStockByProductAsync(Guid pharmacyId, Guid productId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Batch>>(Items
             .Where(b => b.PharmacyId == pharmacyId && b.ProductId == productId && b.Quantity > 0)
