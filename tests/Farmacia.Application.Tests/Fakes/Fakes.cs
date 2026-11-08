@@ -99,6 +99,12 @@ public sealed class InMemoryPurchaseRepository : IPurchaseRepository
         Task.FromResult(Items.Any(p => p.PharmacyId == pharmacyId && p.SupplierId == supplierId
                                        && p.InvoiceNumber == invoiceNumber && p.Id != exceptPurchaseId));
 
+    public Task<IReadOnlyList<Purchase>> ListCreditInvoicesAsync(Guid pharmacyId, Guid? supplierId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Purchase>>(Items
+            .Where(p => p.PharmacyId == pharmacyId && p.PaymentTerm == PaymentTerm.Credit && p.Status == PurchaseStatus.Confirmed
+                        && (supplierId == null || p.SupplierId == supplierId))
+            .ToList());
+
     public void Add(Purchase purchase) => Items.Add(purchase);
 }
 

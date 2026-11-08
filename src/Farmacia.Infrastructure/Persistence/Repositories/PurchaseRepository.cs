@@ -25,6 +25,18 @@ internal sealed class PurchaseRepository(FarmaciaDbContext db) : IPurchaseReposi
             .AsSplitQuery() // avoids repeating each purchase row once per item
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Purchase>> ListCreditInvoicesAsync(
+        Guid pharmacyId, Guid? supplierId, CancellationToken cancellationToken) =>
+        await db.Purchases
+            .Include(p => p.Items)
+            .Include(p => p.Payments)
+            .Where(p => p.PharmacyId == pharmacyId
+                        && p.PaymentTerm == PaymentTerm.Credit
+                        && p.Status == PurchaseStatus.Confirmed
+                        && (supplierId == null || p.SupplierId == supplierId))
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
     public Task<bool> InvoiceExistsAsync(
         Guid pharmacyId, Guid supplierId, string invoiceNumber, Guid exceptPurchaseId, CancellationToken cancellationToken) =>
         db.Purchases.AnyAsync(

@@ -4,7 +4,9 @@ using Farmacia.Application.Purchases.AddPurchaseItem;
 using Farmacia.Application.Purchases.ConfirmPurchase;
 using Farmacia.Application.Purchases.CreatePurchaseDraft;
 using Farmacia.Application.Purchases.GetPurchaseById;
+using Farmacia.Application.Purchases.ListPayables;
 using Farmacia.Application.Purchases.ListPurchases;
+using Farmacia.Application.Purchases.RegisterSupplierPayment;
 using Farmacia.Application.Purchases.RemovePurchaseItem;
 using Farmacia.Application.Purchases.SetPurchaseInvoiceDiscount;
 using Farmacia.Application.Purchases.UpdatePurchaseHeader;
@@ -32,6 +34,30 @@ public sealed class PurchasesController(ISender sender) : ControllerBase
     [ProducesResponseType<IReadOnlyList<PurchaseSummaryDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] PurchaseStatus? status, CancellationToken cancellationToken) =>
         Ok(await sender.Send(new ListPurchasesQuery(status), cancellationToken));
+
+    /// <summary>Credit invoices still owed, the most overdue first. The stock keeper sees them too; only the owner pays.</summary>
+    [HttpGet("payables")]
+    [ProducesResponseType<IReadOnlyList<PayableInvoiceDto>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Payables([FromQuery] Guid? supplierId, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new ListPayablesQuery(supplierId), cancellationToken));
+
+    /// <summary>Pays part or all of a credit invoice, outside the register. Owner only (on top of ReceivePurchases).</summary>
+    /// <response code="400">Over the balance, a cash purchase, a draft, or a transfer or check without its number.</response>
+    /// <response code="409">Another payment on the same invoice was saved at the same time.</response>
+    [HttpPost("{id:guid}/payments")]
+    [Authorize(Policy = Policies.PaySuppliers)]
+    [ProducesResponseType<CreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Pay(Guid id, SupplierPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var paymentId = await sender.Send(
+            new RegisterSupplierPaymentCommand(id, request.Amount, request.Method, request.Reference), cancellationToken);
+
+        // The payment has no URL of its own: Location points to the invoice, which now shows it and the new balance.
+        return CreatedAtAction(nameof(GetById), new { id }, new CreatedResponse(paymentId));
+    }
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<PurchaseDto>(StatusCodes.Status200OK)]
@@ -127,3 +153,6 @@ public sealed record InvoiceDiscountRequest(decimal Discount);
 
 /// <param name="PrintedInvoiceTotal">The total printed on the paper invoice.</param>
 public sealed record ConfirmPurchaseRequest(decimal PrintedInvoiceTotal);
+
+/// <param name="Reference">The transfer or check number (required for those two methods).</param>
+public sealed record SupplierPaymentRequest(decimal Amount, SupplierPaymentMethod Method, string? Reference);

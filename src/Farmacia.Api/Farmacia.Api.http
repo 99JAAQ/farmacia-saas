@@ -226,6 +226,20 @@ Content-Type: application/json
 
 { "printedInvoiceTotal": 87000 }
 
+# What is owed to suppliers: credit invoices with a balance, the most overdue first (owner or stock keeper).
+GET {{Farmacia.Api_HostAddress}}/api/purchases/payables
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+###
+
+# Pay part of a credit invoice by transfer (owner only; a stock keeper gets 403). Over the balance: 400.
+# "Cash" (from the safe) needs no reference; a transfer or a check does.
+POST {{Farmacia.Api_HostAddress}}/api/purchases/{{createPurchase.response.body.$.id}}/payments
+Authorization: Bearer {{login.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "amount": 40000, "method": "BankTransfer", "reference": "TRX-981" }
+
 ### ---------- Cash register (as the cashier) ----------
 
 # @name loginCashier

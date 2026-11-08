@@ -94,6 +94,8 @@ stateDiagram-v2
 
 **Cuentas por pagar** (ver [ADR 0013](adr/0013-cuentas-por-pagar-por-factura.md)): una compra **confirmada y a crédito** se debe al proveedor (`IsPayable`). Su saldo es el total de la factura (fijo una vez confirmada) menos lo pagado, `AmountPaid`, que se guarda como columna: así cada pago modifica la fila de la compra y su `RowVersion` impide que dos pagos simultáneos superen el saldo. `RegisterPayment` registra un pago parcial o total, sin superar el saldo; la transferencia y el cheque llevan su número, para conciliar con el banco. El dinero sale de fuera de la caja (transferencia, caja fuerte o cheque), y solo lo registra el dueño. `IsOverdueOn`: vencida desde el día siguiente a `DueDate` mientras se deba algo.
 
+**Casos de uso y endpoints:** `RegisterSupplierPayment` (`POST /api/purchases/{id}/payments`, política `PaySuppliers`, solo el dueño, exigida además de `ReceivePurchases`; 201 y `Location` a la factura). `ListPayables` (`GET /api/purchases/payables?supplierId=`, `ReceivePurchases`: el bodeguero también ve lo que se debe): las facturas a crédito con saldo, primero las más vencidas y luego por vencimiento, con días de mora y días para vencer, contados con la fecha de Colombia. El detalle de una compra (`PurchaseDto`) trae lo pagado, el saldo, si está vencida y sus pagos con quién los registró. Trade-off conocido: el total de la factura no está guardado (sale de las líneas), así que la base no filtra por saldo y la lista filtra en memoria las compras a crédito confirmadas; si creciera mucho, guardar el total al confirmar.
+
 ## Caja
 
 ```mermaid

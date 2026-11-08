@@ -32,6 +32,12 @@ public static class Policies
     /// </summary>
     public const string ManageInventory = nameof(ManageInventory);
 
+    /// <summary>
+    /// Pay supplier invoices bought on credit. Money leaving the business: the owner only. The stock keeper still
+    /// receives purchases and sees what is owed (ReceivePurchases).
+    /// </summary>
+    public const string PaySuppliers = nameof(PaySuppliers);
+
     internal static void Configure(AuthorizationOptions options)
     {
         // Every endpoint requires a valid token unless it says [AllowAnonymous]:
@@ -43,5 +49,6 @@ public static class Policies
         options.AddPolicy(OperateCash, policy => policy.RequireRole(Roles.Owner, Roles.Cashier));
         options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
         options.AddPolicy(ManageInventory, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
+        options.AddPolicy(PaySuppliers, policy => policy.RequireRole(Roles.Owner));
     }
 }

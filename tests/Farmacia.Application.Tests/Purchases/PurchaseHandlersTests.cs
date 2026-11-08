@@ -43,7 +43,7 @@ public class PurchaseHandlersTests
     }
 
     private FakeCurrentPharmacy Current(Guid? pharmacyId = null) => new(pharmacyId ?? _pharmacy.Id);
-    private PurchaseReader Reader() => new(_products, _suppliers);
+    private PurchaseReader Reader() => new(_products, _suppliers, new FakeUserReader(), new FakeClock(Now));
 
     private Task<Guid> CreateDraftAsync(string invoiceNumber = "FE-100", Guid? supplierId = null) =>
         new CreatePurchaseDraftHandler(_purchases, _suppliers, _unitOfWork, Current()).Handle(
