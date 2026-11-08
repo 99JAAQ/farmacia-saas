@@ -17,3 +17,14 @@ public enum PaymentTerm
     /// <summary>Paid later: needs a due date.</summary>
     Credit = 2,
 }
+
+/// <summary>How a supplier invoice is paid. Always outside the register's drawer (ADR 0013).</summary>
+public enum SupplierPaymentMethod
+{
+    BankTransfer = 1,
+
+    /// <summary>From the safe, not from the register's drawer.</summary>
+    Cash = 2,
+
+    Check = 3,
+}

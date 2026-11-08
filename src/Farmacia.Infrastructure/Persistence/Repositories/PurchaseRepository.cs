@@ -9,12 +9,15 @@ internal sealed class PurchaseRepository(FarmaciaDbContext db) : IPurchaseReposi
     public Task<Purchase?> GetByIdAsync(Guid pharmacyId, Guid purchaseId, CancellationToken cancellationToken) =>
         db.Purchases
             .Include(p => p.Items)
+            .Include(p => p.Payments)
+            .AsSplitQuery()
             .SingleOrDefaultAsync(p => p.PharmacyId == pharmacyId && p.Id == purchaseId, cancellationToken);
 
     public async Task<IReadOnlyList<Purchase>> ListAsync(
         Guid pharmacyId, PurchaseStatus? status, int take, CancellationToken cancellationToken) =>
         await db.Purchases
             .Include(p => p.Items)
+            .Include(p => p.Payments)
             .Where(p => p.PharmacyId == pharmacyId && (status == null || p.Status == status))
             .OrderByDescending(p => p.InvoiceDate)
             .ThenByDescending(p => p.Id) // Guid v7: later creation sorts later

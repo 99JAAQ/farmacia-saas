@@ -92,6 +92,8 @@ stateDiagram-v2
 - **El IVA (0 %, 5 % o 19 %) va por línea.** Si la farmacia es responsable de IVA (`Pharmacy.IsVatResponsible`, por defecto sí), el IVA de las compras es descontable y **no** se suma al costo. Esto está pendiente de confirmar con el contador.
 - **Confirmar es atómico.** Primero se valida todo y después se cambia el estado. La compra, los lotes y el kardex se guardan en una sola transacción, y un doble clic no recibe la mercancía dos veces (`RowVersion`).
 
+**Cuentas por pagar** (ver [ADR 0013](adr/0013-cuentas-por-pagar-por-factura.md)): una compra **confirmada y a crédito** se debe al proveedor (`IsPayable`). Su saldo es el total de la factura (fijo una vez confirmada) menos lo pagado, `AmountPaid`, que se guarda como columna: así cada pago modifica la fila de la compra y su `RowVersion` impide que dos pagos simultáneos superen el saldo. `RegisterPayment` registra un pago parcial o total, sin superar el saldo; la transferencia y el cheque llevan su número, para conciliar con el banco. El dinero sale de fuera de la caja (transferencia, caja fuerte o cheque), y solo lo registra el dueño. `IsOverdueOn`: vencida desde el día siguiente a `DueDate` mientras se deba algo.
+
 ## Caja
 
 ```mermaid

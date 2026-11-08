@@ -544,6 +544,10 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("AmountPaid")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTimeOffset?>("ConfirmedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -587,6 +591,8 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PharmacyId", "SupplierId", "InvoiceNumber")
                         .IsUnique();
+
+                    b.HasIndex("PharmacyId", "PaymentTerm", "Status", "DueDate");
 
                     b.ToTable("Purchases");
                 });
@@ -656,6 +662,45 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.HasIndex("SaleUnitId");
 
                     b.ToTable("PurchaseItems", (string)null);
+                });
+
+            modelBuilder.Entity("Farmacia.Domain.Purchases.SupplierPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("PaidAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("PaidBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PharmacyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PurchaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaidBy");
+
+                    b.HasIndex("PharmacyId");
+
+                    b.HasIndex("PurchaseId");
+
+                    b.ToTable("SupplierPayments", (string)null);
                 });
 
             modelBuilder.Entity("Farmacia.Domain.Sales.Payment", b =>
@@ -1499,6 +1544,27 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Farmacia.Domain.Purchases.SupplierPayment", b =>
+                {
+                    b.HasOne("Farmacia.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("PaidBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Farmacia.Domain.Purchases.Purchase", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Farmacia.Domain.Sales.Payment", b =>
                 {
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
@@ -1774,6 +1840,8 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Farmacia.Domain.Purchases.Purchase", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("Farmacia.Domain.Sales.Sale", b =>

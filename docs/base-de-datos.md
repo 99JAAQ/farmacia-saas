@@ -16,6 +16,7 @@ erDiagram
     Batches ||--o{ StockMovements : "kardex"
     Suppliers ||--o{ Purchases : "factura"
     Purchases ||--|{ PurchaseItems : "líneas"
+    Purchases ||--o{ SupplierPayments : "pagos (a crédito)"
     PurchaseItems |o--o| Batches : "crea al confirmar"
     AspNetUsers ||--o{ RefreshTokens : "sesiones"
     AspNetUsers ||--o{ CashSessions : "abre / cierra"
@@ -104,8 +105,19 @@ erDiagram
         date InvoiceDate
         int Status "1 borrador, 2 confirmada"
         int PaymentTerm "1 contado, 2 crédito"
+        date DueDate "vencimiento si es a crédito"
         decimal InvoiceDiscount
+        decimal AmountPaid "lo pagado; cada pago la actualiza"
         rowversion RowVersion
+    }
+    SupplierPayments {
+        guid Id PK
+        guid PurchaseId FK
+        decimal Amount
+        int Method "1 transferencia, 2 efectivo (caja fuerte), 3 cheque"
+        string Reference "número de transferencia o cheque"
+        datetimeoffset PaidAt
+        guid PaidBy FK
     }
     PurchaseItems {
         guid Id PK
@@ -254,7 +266,7 @@ erDiagram
 | **Enums como `int`** en la base (y como texto en el JSON de la API) | El valor numérico es estable; en la API el texto es legible. Los significados están en la tabla de abajo. |
 | **Dinero `decimal(18,2)`; costos por unidad `decimal(18,4)`** | Una caja de $10.000 con 30 tabletas cuesta 333,3333 cada una; con 2 decimales se acumularía el error de redondeo. |
 | **Fechas y horas `datetimeoffset`** con la hora de Colombia (-05:00); **fechas sin hora `date`** | El offset deja claro a qué hora local ocurrió algo. Un vencimiento es un día, no un instante. |
-| **`RowVersion`** en `Batches`, `Purchases`, `CashSessions` y `CreditAccounts` | Concurrencia optimista: dos cambios simultáneos sobre la misma fila no se pisan (la API responde 409). |
+| **`RowVersion`** en `Batches`, `Purchases` (también los pagos a proveedores), `CashSessions` y `CreditAccounts` | Concurrencia optimista: dos cambios simultáneos sobre la misma fila no se pisan (la API responde 409). |
 | **Sin `CHECK (Quantity >= 0)` en `Batches`** | A propósito: la sincronización offline (fase 6) puede dejar stock negativo, y se marca para revisar. La regla "nunca negativo en línea" vive en el dominio. |
 | **NIT guardado como texto** (`900123456-8`) | `NitConverter` convierte el value object `Nit` a texto y viceversa. |
 
@@ -291,6 +303,7 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 | `Payments.Method` | 1 = Efectivo, 2 = Tarjeta, 3 = Billetera (Nequi/Daviplata), 4 = Transferencia, 5 = Fiado |
 | `Products.VatRate`, `SaleItems.VatRate` | Igual que `PurchaseItems.VatRate`: el valor es el porcentaje |
 | `SaleReturnItems.Disposition` | 1 = Vuelve al inventario, 2 = Se descarta |
+| `SupplierPayments.Method` | 1 = Transferencia, 2 = Efectivo (de la caja fuerte), 3 = Cheque |
 | `DocumentCounters.Document` | 1 = Tiquete de venta, 2 = Devolución, 3 = Abono |
 | `CreditEntries.Type` | 1 = Fiado (venta), 2 = Abono, 3 = Devolución de algo fiado |
 
@@ -332,6 +345,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddCreditAccounts` | Cuentas de fiado, sus movimientos y los abonos |
 | `AddProductIsActive` | `Products.IsActive` (editada a mano: `defaultValue: true`, para no desactivar los productos existentes) |
 | `AddStockMovementPerformedBy` | `StockMovements.PerformedBy`: quién causó cada movimiento del kardex (admite nulos para los anteriores) |
+| `AddSupplierPayments` | Pagos a proveedores por factura y `Purchases.AmountPaid` (0 en las compras existentes) |
 
 Comandos (desde la raíz del repo):
 

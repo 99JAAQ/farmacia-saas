@@ -2,6 +2,7 @@ using Farmacia.Domain.Inventory;
 using Farmacia.Domain.Products;
 using Farmacia.Domain.Purchases;
 using Farmacia.Domain.Suppliers;
+using Farmacia.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +14,7 @@ public class PurchaseConfiguration : IEntityTypeConfiguration<Purchase>
     {
         builder.Property(p => p.InvoiceNumber).HasMaxLength(50);
         builder.Property(p => p.InvoiceDiscount).HasPrecision(18, 2);
+        builder.Property(p => p.AmountPaid).HasPrecision(18, 2);
 
         // Optimistic concurrency: a double click on "Confirmar" (two requests at once) must not create the
         // batches twice. The second SaveChanges finds a different RowVersion and fails (409).
@@ -34,6 +36,29 @@ public class PurchaseConfiguration : IEntityTypeConfiguration<Purchase>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Payments belong to the invoice too. Two at once on the same invoice: the RowVersion stops the second (409).
+        builder.HasMany(p => p.Payments)
+            .WithOne()
+            .HasForeignKey(sp => sp.PurchaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.Payments).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // The list of what is owed: confirmed credit invoices, by due date.
+        builder.HasIndex(p => new { p.PharmacyId, p.PaymentTerm, p.Status, p.DueDate });
+    }
+}
+
+public class SupplierPaymentConfiguration : IEntityTypeConfiguration<SupplierPayment>
+{
+    public void Configure(EntityTypeBuilder<SupplierPayment> builder)
+    {
+        builder.ToTable("SupplierPayments");
+
+        builder.Property(sp => sp.Amount).HasPrecision(18, 2);
+        builder.Property(sp => sp.Reference).HasMaxLength(100);
+
+        builder.HasOne<ApplicationUser>().WithMany().HasForeignKey(sp => sp.PaidBy).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

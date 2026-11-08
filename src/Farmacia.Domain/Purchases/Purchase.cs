@@ -13,6 +13,7 @@ public class Purchase : TenantEntity
     public const decimal InvoiceTotalTolerance = 1m;
 
     private readonly List<PurchaseItem> _items = [];
+    private readonly List<SupplierPayment> _payments = [];
 
     private Purchase() { } // EF Core
 
@@ -35,6 +36,31 @@ public class Purchase : TenantEntity
     public PurchaseStatus Status { get; private set; }
     public DateTimeOffset? ConfirmedAt { get; private set; }
     public IReadOnlyCollection<PurchaseItem> Items => _items.AsReadOnly();
+
+    /// <summary>Payments towards this invoice, if it was bought on credit.</summary>
+    public IReadOnlyCollection<SupplierPayment> Payments => _payments.AsReadOnly();
+
+    /// <summary>
+    /// Only a confirmed credit invoice is owed: a cash purchase was paid when it was received, and a draft does not
+    /// exist for the supplier yet.
+    /// </summary>
+    public bool IsPayable => Status == PurchaseStatus.Confirmed && PaymentTerm == PaymentTerm.Credit;
+
+    /// <summary>
+    /// Kept as a column, not summed from the payments: each payment then UPDATEs the purchase row, so its RowVersion
+    /// stops two simultaneous payments from both passing the balance. Inserting only the payment row would not touch
+    /// the purchase, and the concurrency check would never run.
+    /// </summary>
+    public decimal AmountPaid { get; private set; }
+
+    /// <summary>
+    /// What is still owed. The invoice's total is fixed once confirmed (it cannot be edited), so the balance is that
+    /// total minus what was paid. Like any aggregate, it needs to be loaded whole (lines included), as its repository does.
+    /// </summary>
+    public decimal Balance => IsPayable ? CalculateTotals().Total - AmountPaid : 0;
+
+    /// <summary>Unpaid after its due date, on the pharmacy's date.</summary>
+    public bool IsOverdueOn(DateOnly today) => Balance > 0 && DueDate is { } due && today > due;
 
     public static Purchase CreateDraft(
         Guid pharmacyId, Guid supplierId, string invoiceNumber, DateOnly invoiceDate,
@@ -109,6 +135,47 @@ public class Purchase : TenantEntity
             ?? throw new DomainException("La línea no existe en esta compra.");
 
         _items.Remove(item);
+    }
+
+    /// <summary>
+    /// A payment towards this credit invoice, in full or in part. It never goes over what is owed, and a transfer or a
+    /// check carries its number so it can be matched with the bank statement. Paying is not editing: the lines, totals
+    /// and batches stay as they were confirmed.
+    /// </summary>
+    /// <param name="paidAt">Local Colombian time.</param>
+    public SupplierPayment RegisterPayment(
+        decimal amount, SupplierPaymentMethod method, string? reference, DateTimeOffset paidAt, Guid paidBy)
+    {
+        if (!IsPayable)
+            throw new DomainException(Status == PurchaseStatus.Draft
+                ? "La compra todavía es un borrador: confírmela antes de pagarla."
+                : "La compra fue de contado: no tiene saldo por pagar.");
+
+        if (!Enum.IsDefined(method))
+            throw new DomainException("El medio de pago no es válido.");
+
+        if (amount <= 0)
+            throw new DomainException("El pago debe ser mayor que cero.");
+
+        var balance = Balance;
+        if (amount > balance)
+            throw new DomainException(
+                $"El pago ({Money.Format(amount)}) supera el saldo de la factura {InvoiceNumber} ({Money.Format(balance)}).");
+
+        var cleanReference = Guard.Optional(reference);
+        if (method != SupplierPaymentMethod.Cash && cleanReference is null)
+            throw new DomainException("Escriba el número de la transferencia o del cheque, para conciliarlo con el banco.");
+
+        if (DateOnly.FromDateTime(paidAt.DateTime) < InvoiceDate)
+            throw new DomainException("El pago no puede ser anterior a la fecha de la factura.");
+
+        if (paidBy == Guid.Empty)
+            throw new DomainException("El pago necesita quién lo registra.");
+
+        var payment = new SupplierPayment(PharmacyId, Id, amount, method, cleanReference, paidAt, paidBy);
+        _payments.Add(payment);
+        AmountPaid += amount;
+        return payment;
     }
 
     /// <summary>Totals as they would be on the invoice. Valid for drafts too (to show while typing).</summary>
