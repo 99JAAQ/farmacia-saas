@@ -26,7 +26,7 @@ const bearer = (init: RequestInit) => new Headers(init.headers).get('Authorizati
 const session = (accessToken: string): Session => ({
   accessToken,
   accessTokenExpiresAt: '2026-10-23T12:00:00Z',
-  user: { id: 'u1', email: 'cajero@farmacia.dev', fullName: 'Cajero', pharmacyId: 'p1', roles: ['Cashier'] },
+  user: { id: 'u1', email: 'cajero@farmacia.dev', fullName: 'Cajero', pharmacyId: 'p1', roles: ['Cashier'], mustChangePassword: false },
 })
 
 const callsTo = (fetchMock: ReturnType<typeof mockFetch>, path: string) =>

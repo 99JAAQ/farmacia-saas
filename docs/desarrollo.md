@@ -96,6 +96,7 @@ cd web && npm test                                # frontend
 - **Docker debe estar encendido.** Los tests de Infrastructure y de la Api levantan su propio SQL Server desechable con Testcontainers y aplican las migraciones reales. No tocan su base de desarrollo.
 - **Los tests de integración comparten un contenedor por ejecución.** Use datos únicos en cada test: NIT generados con `Nit.FromNumber`, números de factura aleatorios. Los tests de caja crean su propia farmacia, porque cada farmacia admite un solo turno abierto.
 - **Row-Level Security también corre en los tests.** Para preparar o verificar datos directamente en la base, use `fixture.CreateContext()` (Infrastructure) o `api.CreateSeedingScope()` (Api): ven todas las farmacias. Las peticiones HTTP sí quedan limitadas a la farmacia de su token.
+- **Probar en el navegador:** las pantallas de la fase 3 se verificaron con un script de Playwright (`playwright-core` con el Edge del sistema, sin descargar navegadores) contra `npm run dev` y la API. Recorre la creación de un usuario por el dueño, el cambio obligatorio de la contraseña temporal y el panel del administrador. No está en el repo: se convertirá en tests end-to-end en la fase 5.
 - **Un test debe poder fallar.** Para los tests importantes, rompa a propósito el código que protegen y confirme que fallan (prueba de mutación) antes de darlos por buenos.
 
 ## Convenciones

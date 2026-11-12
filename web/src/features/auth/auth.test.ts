@@ -17,7 +17,7 @@ describe('safeRedirectPath (open redirect protection)', () => {
 })
 
 describe('can (mirror of the API policies)', () => {
-  const userWith = (...roles: Role[]): User => ({ id: 'u', email: 'u@f.dev', fullName: 'U', pharmacyId: 'p', roles })
+  const userWith = (...roles: Role[]): User => ({ id: 'u', email: 'u@f.dev', fullName: 'U', pharmacyId: 'p', roles, mustChangePassword: false })
 
   it('lets the owner and the stock keeper manage the catalog', () => {
     expect(can(userWith('Owner'), 'manageCatalog')).toBe(true)
@@ -52,6 +52,18 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('Owner'), 'paySuppliers')).toBe(true)
     expect(can(userWith('StockKeeper'), 'paySuppliers')).toBe(false)
     expect(can(userWith('Cashier'), 'paySuppliers')).toBe(false)
+  })
+
+  it('lets only the owner manage users, and only the platform administrator manage pharmacies', () => {
+    expect(can(userWith('Owner'), 'manageUsers')).toBe(true)
+    expect(can(userWith('Cashier'), 'manageUsers')).toBe(false)
+    expect(can(userWith('PlatformAdmin'), 'managePlatform')).toBe(true)
+    expect(can(userWith('Owner'), 'managePlatform')).toBe(false)
+  })
+
+  it('allows nothing while the user has a temporary password, like the API', () => {
+    const owner = { ...userWith('Owner'), mustChangePassword: true }
+    for (const policy of ['manageUsers', 'operateCash', 'manageCatalog', 'managePharmacy'] as const) expect(can(owner, policy)).toBe(false)
   })
 
   it('lets only the owner edit the pharmacy, and keeps the platform administrator out of every pharmacy screen', () => {

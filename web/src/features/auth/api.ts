@@ -20,3 +20,13 @@ export async function logout(): Promise<void> {
     setSession(null)
   }
 }
+
+/**
+ * The signed-in user's own password (also a temporary one). The API ends the user's other sessions and returns a
+ * new one, which replaces the current session here (with mustChangePassword false).
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<Session> {
+  const session = await api<Session>('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } })
+  setSession(session)
+  return session
+}

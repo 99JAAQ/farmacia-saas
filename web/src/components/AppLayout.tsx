@@ -1,6 +1,6 @@
 import { LogOut } from 'lucide-react'
 import { usePharmacy } from '@/features/pharmacy/usePharmacy'
-import { NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { roleLabels } from '@/features/auth/roles'
 import { useAuth } from '@/features/auth/useAuth'
@@ -42,7 +42,9 @@ export function AppLayout() {
         <div className="grid gap-1 px-5 py-5">
           <Logo />
           {/* Which pharmacy this session works in: with several on the platform, it must be obvious. */}
-          {pharmacy.data && <div className="truncate pl-[2.625rem] text-xs text-muted-foreground">{pharmacy.data.name}</div>}
+          <div className="truncate pl-[2.625rem] text-xs text-muted-foreground">
+            {user?.pharmacyId === null ? 'Plataforma' : pharmacy.data?.name}
+          </div>
         </div>
         <nav aria-label="Secciones" className="grid gap-1 px-3">
           {links}
@@ -50,6 +52,9 @@ export function AppLayout() {
         <div className="mt-auto border-t p-4">
           <div className="truncate text-sm font-medium">{user?.fullName}</div>
           <div className="truncate text-xs text-muted-foreground">{roles}</div>
+          <Link to="/cambiar-clave" className="mt-2 block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Cambiar contraseña
+          </Link>
           <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => void logout()}>
             <LogOut aria-hidden="true" />
             Cerrar sesión

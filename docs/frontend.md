@@ -63,6 +63,7 @@ Rutas actuales (`src/router.tsx`):
 | Ruta | Política | Pantalla |
 |---|---|---|
 | `/login` | Pública | Inicio de sesión |
+| `/cambiar-clave` | Autenticado (fuera del layout) | Cambiar la contraseña. Obligatoria con una contraseña temporal: `RequireAuth` lleva ahí a todo usuario con `mustChangePassword`, desde cualquier ruta |
 | `/` | Autenticado | Inicio |
 | `/vender` | `operateCash` | POS: vender en el turno propio, tiquete, ventas del turno |
 | `/devoluciones` | `operateCash` | Buscar un tiquete por número, devolver por línea, comprobante |
@@ -70,6 +71,8 @@ Rutas actuales (`src/router.tsx`):
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
 | `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` (pagar: `paySuppliers`) | Por pagar, borradores y recientes; nueva compra; borrador o detalle con sus pagos |
 | `/catalogo`, `/catalogo/:id` | `manageCatalog` (bajas, ajustes y movimientos: `manageInventory`) | Catálogo con stock y vencimientos; ficha del producto: datos, presentaciones, descontinuar, lotes, bajas y ajustes, movimientos |
+| `/usuarios` | `manageUsers` | Usuarios de la farmacia: crear con contraseña temporal, cambiar el rol, desactivar o reactivar, restablecer la contraseña |
+| `/plataforma` | `managePlatform` | Solo el administrador de la plataforma: las farmacias con sus dueños, y "Nueva farmacia" (con el DV del NIT en vivo y el dueño con contraseña temporal) |
 | `/farmacia` | `managePharmacy` | Mi farmacia: nombre, dirección y teléfono del tiquete (el NIT solo se muestra), "Responsable de IVA", y una vista previa del encabezado |
 
 ## Apariencia
@@ -129,6 +132,9 @@ Rutas actuales (`src/router.tsx`):
   - La lista de compras empieza con **"Por pagar"**: el total adeudado, cuántas facturas están vencidas y cada factura con su vencimiento en palabras (`describeDue`: "Vencida hace 38 días" en rojo, "Vence en 5 días" como aviso), la más vencida primero.
   - El detalle de una compra a crédito confirmada muestra el total, lo pagado, el saldo, los pagos con quién los registró y, solo al dueño (`paySuppliers`), **"Registrar pago"**. El diálogo aplica las reglas del servidor antes de guardar (`paymentProblem`: no superar el saldo; transferencia y cheque con su número). El efectivo de la caja fuerte nunca envía referencia, aunque se haya escrito una antes de cambiar de medio.
 - **Tiquete y comprobante impresos:** `PrintDialog` (en `components/`) muestra el tiquete o el comprobante de devolución con el botón Imprimir; los dos llevan la clase `ticket-print`. `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado de todo comprobante es `PharmacyHeader`: nombre, NIT, dirección y teléfono de la farmacia (`headerLines`, con tests), de `GET /api/pharmacy`.
+- **Contraseñas temporales:** `can()` niega todo a un usuario con `mustChangePassword`, igual que la API, y `RequireAuth` lo lleva a `/cambiar-clave`, que es de pantalla completa como el login y solo ofrece "Salir". Al guardar, la API devuelve una sesión nueva que reemplaza a la actual (`changePassword` llama a `setSession`). `lib/password.ts` replica las reglas de Identity (8+, mayúscula, minúscula y número) para avisar antes de enviar. La contraseña temporal se escribe en un campo visible, porque el dueño se la lee al usuario.
+- **Usuarios (`features/users`):** el dueño no ve acciones sobre sí mismo ("usted"): la API no le deja desactivarse ni cambiarse el rol. El rol se cambia con un selector en la fila. Desactivar pide confirmación y explica que la sesión abierta se cierra en máximo 15 minutos. `describeStatus` (con tests) avisa a quién le falta cambiar la contraseña temporal.
+- **Administrador de la plataforma:** solo ve "Inicio" y "Farmacias", y bajo el logo dice "Plataforma". Cualquier otra ruta muestra "No tiene permiso".
 - **La farmacia actual (`features/pharmacy`):** `usePharmacy` la carga una vez por sesión (el layout la pide para mostrar su nombre bajo el logo, así ya está en caché cuando se imprime un tiquete). Con varias farmacias en la plataforma, el nombre en la barra lateral deja claro en cuál se está trabajando. El administrador de la plataforma no tiene farmacia y no la pide.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.

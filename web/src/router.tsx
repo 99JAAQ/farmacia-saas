@@ -1,4 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router'
+import { UsersPage } from '@/features/users/UsersPage'
+import { PlatformPage } from '@/features/platform/PlatformPage'
+import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
 import { PharmacyPage } from '@/features/pharmacy/PharmacyPage'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -22,6 +25,8 @@ export const router = createBrowserRouter([
     // Everything below needs a session.
     element: <RequireAuth />,
     children: [
+      // Full screen, outside the layout: with a temporary password it is the only screen the user can use.
+      { path: 'cambiar-clave', element: <ChangePasswordPage /> },
       {
         element: <AppLayout />,
         children: [
@@ -46,6 +51,14 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole policy="managePharmacy" />,
             children: [{ path: 'farmacia', element: <PharmacyPage /> }],
+          },
+          {
+            element: <RequireRole policy="manageUsers" />,
+            children: [{ path: 'usuarios', element: <UsersPage /> }],
+          },
+          {
+            element: <RequireRole policy="managePlatform" />,
+            children: [{ path: 'plataforma', element: <PlatformPage /> }],
           },
           {
             element: <RequireRole policy="receivePurchases" />,
