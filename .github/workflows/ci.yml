@@ -29,7 +29,7 @@ jobs:
       - run: dotnet build Farmacia.slnx --configuration Release --no-restore
       # Infrastructure and API tests start their own SQL Server container (Docker is available on the runner).
       - run: dotnet test Farmacia.slnx --configuration Release --no-build --logger trx --results-directory test-results
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: backend-test-results
@@ -88,7 +88,7 @@ jobs:
       - name: App logs
         if: failure()
         run: docker compose --profile app logs app migrate
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
