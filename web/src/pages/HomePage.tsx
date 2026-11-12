@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { sectionsFor } from '@/components/navigation'
+import { can } from '@/features/auth/permissions'
 import { useAuth } from '@/features/auth/useAuth'
+import { DailySummaryPanel } from '@/features/dashboard/DailySummaryPanel'
 
-/** Greeting and a shortcut to each section the user may use. The day's summary comes with the dashboard (phase 4). */
+/** Greeting, the day's live summary (owner only) and a shortcut to each section the user may use. */
 export function HomePage() {
   const { user } = useAuth()
   const shortcuts = sectionsFor(user).filter((section) => section.to !== '/')
@@ -14,6 +16,7 @@ export function HomePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Hola, {user?.fullName}</h1>
         <p className="text-muted-foreground">¿Qué vamos a hacer hoy?</p>
       </div>
+      {can(user, 'viewDashboard') && <DailySummaryPanel />}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shortcuts.map(({ to, label, description, icon: Icon }) => (
           <Link

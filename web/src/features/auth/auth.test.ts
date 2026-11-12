@@ -61,6 +61,12 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('Owner'), 'managePlatform')).toBe(false)
   })
 
+  it('shows the day’s margin to the owner only', () => {
+    expect(can(userWith('Owner'), 'viewDashboard')).toBe(true)
+    expect(can(userWith('Cashier'), 'viewDashboard')).toBe(false)
+    expect(can(userWith('StockKeeper'), 'viewDashboard')).toBe(false)
+  })
+
   it('allows nothing while the user has a temporary password, like the API', () => {
     const owner = { ...userWith('Owner'), mustChangePassword: true }
     for (const policy of ['manageUsers', 'operateCash', 'manageCatalog', 'managePharmacy'] as const) expect(can(owner, policy)).toBe(false)

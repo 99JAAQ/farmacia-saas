@@ -49,6 +49,9 @@ public static class Policies
     /// </summary>
     public const string ManageUsers = nameof(ManageUsers);
 
+    /// <summary>The day's summary: sales, payment methods and the margin (it shows costs). The owner only.</summary>
+    public const string ViewDashboard = nameof(ViewDashboard);
+
     /// <summary>
     /// Any user of a pharmacy, without a temporary password: the same rule as the fallback policy, with a name so the
     /// real-time hub can use it (a hub needs an explicit policy).
@@ -76,6 +79,7 @@ public static class Policies
         Add(options, PaySuppliers, Roles.Owner);
         Add(options, ManagePharmacy, Roles.Owner);
         Add(options, ManageUsers, Roles.Owner);
+        Add(options, ViewDashboard, Roles.Owner);
         Add(options, ManagePlatform, Roles.PlatformAdmin);
     }
 

@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
         services.AddScoped<ICreditPaymentRepository, CreditPaymentRepository>();
         services.AddScoped<IKardexReader, KardexReader>();
+        services.AddScoped<IDailySalesData, DailySalesReader>();
         services.AddScoped<IDocumentNumberSequence, DocumentNumberSequence>();
         services.AddScoped<IPlatformPharmacies, PlatformPharmacies>();
         services.AddScoped<IUserAccounts, UserAccounts>();

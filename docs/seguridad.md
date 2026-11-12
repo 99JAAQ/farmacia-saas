@@ -93,6 +93,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | `PaySuppliers` | Dueño | Pagar facturas de proveedores a crédito (`POST /api/purchases/{id}/payments`); se exige además de `ReceivePurchases` |
 | `ManagePharmacy` | Dueño | Editar los datos de la farmacia (`PUT /api/pharmacy`): nombre, dirección y teléfono del tiquete, y si el IVA de las compras es descontable. La lectura (`GET /api/pharmacy`) es para cualquier usuario de la farmacia, porque el cajero imprime su nombre y NIT. Ninguna de las dos lleva Id: siempre es la farmacia del token |
 | `ManageUsers` | Dueño | `/api/users`: listar, crear (con contraseña temporal), cambiar el rol, desactivar y reactivar, restablecer la contraseña. Un usuario de otra farmacia responde 404 |
+| `ViewDashboard` | Dueño | El resumen del día (`GET /api/dashboard/today`): muestra costos y margen |
 | `UsePharmacy` | Cualquier usuario de una farmacia, sin contraseña temporal (la misma regla que la de respaldo) | El hub de tiempo real `/hubs/pharmacy`, que necesita una política con nombre |
 | `ManagePlatform` | Administrador de la plataforma | `/api/platform/pharmacies`: listar las farmacias y crear una con su dueño |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
