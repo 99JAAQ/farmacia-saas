@@ -1,30 +1,59 @@
 # Farmacia SaaS
 
-Software de gestión para farmacias en Colombia: inventario con lotes y vencimientos, compras a proveedores, caja por turnos y, próximamente, punto de venta (POS). Está construido para una farmacia real y pensado como SaaS multi-tenant: cada farmacia ve solo sus datos.
+[![CI](https://github.com/99JAAQ/farmacia-saas/actions/workflows/ci.yml/badge.svg)](https://github.com/99JAAQ/farmacia-saas/actions/workflows/ci.yml)
+
+Software de gestión para farmacias en Colombia: punto de venta, caja por turnos, inventario por lotes con vencimientos, compras a proveedores y fiado. Está construido para una farmacia real y pensado como SaaS multi-tenant: cada farmacia ve solo sus datos, y SQL Server lo hace cumplir además del código.
 
 > English summary: [README.en.md](README.en.md)
 
-## Qué hace hoy
+## Qué hace
 
-- **Catálogo**: productos con varias presentaciones (caja, blíster, tableta), cada una con su factor de conversión, su precio y su código de barras.
-- **Compras**: facturas de proveedor en borrador que se confirman al recibir la mercancía. Manejan bonificaciones, descuentos por línea y por factura, IVA mixto y verificación contra el total impreso. Al confirmar, cada línea crea un lote con su costo real por unidad.
-- **Inventario**: stock por lote con kardex (cada cambio queda registrado) y salida por FEFO (primero lo que vence primero).
-- **Caja**: una caja, varios turnos al día. Abre con una base y registra ingresos y egresos; al cerrar, el cajero cuenta a ciegas (sin ver cuánto debería haber).
-- **Usuarios y roles**: dueño, cajero y bodeguero, con permisos distintos.
+- **Punto de venta**: compatible con lector de código de barras, venta fraccionada (caja, blíster, tableta), pago mixto (efectivo, tarjeta, Nequi/Daviplata, transferencia, fiado) y tiquete para impresora térmica de 80 mm. Sale primero lo que vence primero (FEFO).
+- **Caja**: varios turnos al día, con base, ingresos y egresos, y cierre con conteo a ciegas (el cajero no ve cuánto debería haber).
+- **Devoluciones**: por línea y cantidad, con reintegro en efectivo. El producto vuelve al mismo lote o se descarta.
+- **Fiado**: cupo por cliente, abonos al saldo y estado de cuenta.
+- **Compras y cuentas por pagar**: facturas con bonificaciones, descuentos e IVA mixto. Cada línea crea un lote con su costo real, y los pagos se registran por factura, con alerta de las vencidas.
+- **Inventario**: kardex de cada movimiento con quién lo hizo, bajas de vencidos, ajustes por conteo, y alertas de stock mínimo y vencimientos.
+- **En vivo**: el panel del día del dueño (ventas, margen bruto y medios de pago), el stock y las alertas se actualizan solos (SignalR).
+- **Multi-tenant**: un administrador de la plataforma crea farmacias con su dueño, y el dueño crea a sus cajeros y bodegueros con contraseña temporal obligatoria.
+
+## Lo técnico que vale la pena mirar
+
+| Tema | Dónde |
+|---|---|
+| Aislamiento entre farmacias en dos capas: repositorios y Row-Level Security de SQL Server | [ADR 0014](docs/adr/0014-row-level-security.md) |
+| JWT propio con refresh token rotado en cookie HttpOnly y detección de reutilización | [ADR 0006](docs/adr/0006-jwt-propio-y-refresh-en-cookie.md) |
+| Tiempo real con avisos sin datos, enviados después del commit y derivados de lo que se guardó | [ADR 0017](docs/adr/0017-tiempo-real-con-avisos-delgados.md), [ADR 0018](docs/adr/0018-avisos-desde-lo-que-se-guarda.md) |
+| Stock por lote con kardex en la misma transacción, FEFO y concurrencia optimista | [ADR 0007](docs/adr/0007-lotes-kardex-y-fefo.md) |
+| Consecutivos sin saltos ni repetidos bajo concurrencia (`MERGE … HOLDLOCK`) | [Base de datos](docs/base-de-datos.md#los-consecutivos-tiquetes-y-devoluciones) |
+| Un solo contenedor para la API y el frontend (cookie `SameSite=Strict` sin CORS) | [ADR 0019](docs/adr/0019-un-contenedor-para-api-y-frontend.md) |
+| Tests que pueden fallar: pruebas de mutación de las reglas importantes | [Desarrollo](docs/desarrollo.md#tests) |
+
+Todas las decisiones están en [`docs/adr/`](docs/adr/README.md).
 
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
-| Backend | .NET 10, ASP.NET Core Web API (controllers), Clean Architecture + CQRS con MediatR |
-| Datos | EF Core 10, SQL Server 2022 (Docker en desarrollo) |
+| Backend | .NET 10, ASP.NET Core Web API (controllers), Clean Architecture + CQRS con MediatR, SignalR |
+| Datos | EF Core 10, SQL Server 2022 con Row-Level Security |
 | Auth | ASP.NET Core Identity + JWT propio + refresh token en cookie HttpOnly |
 | Frontend | React 19, TypeScript, Vite, TanStack Query, React Router, Tailwind + shadcn/ui |
-| Tests | xUnit + Testcontainers (SQL Server real), Vitest |
+| Tests | xUnit + Testcontainers (SQL Server real), Vitest, Playwright (end to end) |
+| Infra | Docker (imagen chiseled sin shell), GitHub Actions, Azure (en preparación) |
 
-## Arrancar en 5 minutos
+## Probarlo en un minuto (Docker)
 
-Requisitos: [.NET SDK 10](https://dotnet.microsoft.com/download), [Node.js 22+](https://nodejs.org) y [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+```bash
+cp .env.example .env     # complete MSSQL_SA_PASSWORD y JWT_SIGNING_KEY
+docker compose --profile app up --build
+```
+
+Abra http://localhost:8080 y entre con `admin@farmacia.local` y la contraseña de `BOOTSTRAP_ADMIN_PASSWORD`. Le pedirá cambiarla; después cree su primera farmacia.
+
+## Desarrollo
+
+Requisitos: [.NET SDK 10](https://dotnet.microsoft.com/download), [Node.js 24](https://nodejs.org) y [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
 ```bash
 # 1. Base de datos
@@ -48,13 +77,16 @@ cd web && npm install && npm run dev
 
 En desarrollo se crean usuarios de prueba: `dueno@farmacia.dev`, `cajero@farmacia.dev`, `bodega@farmacia.dev` y el administrador de la plataforma `admin@farmacia.dev`, con la contraseña definida en `src/Farmacia.Api/appsettings.Development.json`.
 
-## Documentación
-
-Todo está en [`docs/`](docs/README.md). Si es nuevo en el equipo, empiece por [arquitectura](docs/arquitectura.md) y [estructura de carpetas](docs/estructura-carpetas.md).
-
 ## Tests
 
 ```bash
-dotnet test            # backend (Docker encendido: los tests de integración levantan su propio SQL Server)
-cd web && npm test     # frontend
+dotnet test                                    # backend (Docker encendido: los tests de integración levantan su propio SQL Server)
+cd web && npm test                             # frontend
+cd e2e && npm install && npx playwright test   # end to end, con la app corriendo en Docker (ver arriba)
 ```
+
+El CI (GitHub Actions) corre los tres en cada push.
+
+## Documentación
+
+Todo está en [`docs/`](docs/README.md). Si es nuevo en el equipo, empiece por [arquitectura](docs/arquitectura.md) y [estructura de carpetas](docs/estructura-carpetas.md).

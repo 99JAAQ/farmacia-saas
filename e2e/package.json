@@ -1,0 +1,13 @@
+{
+  "name": "farmacia-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests against the whole app running as in production (docker compose --profile app).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^24.0.0"
+  }
+}

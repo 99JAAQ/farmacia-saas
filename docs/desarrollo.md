@@ -103,14 +103,33 @@ dotnet test                                       # todo el backend
 dotnet test tests/Farmacia.Domain.Tests           # un solo proyecto
 dotnet test --filter CashPersistenceTests         # una sola clase
 cd web && npm test                                # frontend
+cd e2e && npx playwright test                     # end to end (con la app en Docker: docker compose --profile app up -d --build)
 ```
 
 - **Docker debe estar encendido.** Los tests de Infrastructure y de la Api levantan su propio SQL Server desechable con Testcontainers y aplican las migraciones reales. No tocan su base de desarrollo.
 - **Los tests de integración comparten un contenedor por ejecución.** Use datos únicos en cada test: NIT generados con `Nit.FromNumber`, números de factura aleatorios. Los tests de caja crean su propia farmacia, porque cada farmacia admite un solo turno abierto.
 - **Row-Level Security también corre en los tests.** Para preparar o verificar datos directamente en la base, use `fixture.CreateContext()` (Infrastructure) o `api.CreateSeedingScope()` (Api): ven todas las farmacias. Las peticiones HTTP sí quedan limitadas a la farmacia de su token.
 - **Tiempo real:** Vite también reenvía `/hubs` a la API, con WebSockets (`ws: true`). Los tests de la API usan un cliente SignalR real (`Microsoft.AspNetCore.SignalR.Client`) con long polling sobre el servidor en memoria (`RealtimeTests`).
-- **Probar en el navegador:** las pantallas de la fase 3 se verificaron con un script de Playwright (`playwright-core` con el Edge del sistema, sin descargar navegadores) contra `npm run dev` y la API. Recorre la creación de un usuario por el dueño, el cambio obligatorio de la contraseña temporal y el panel del administrador. No está en el repo: se convertirá en tests end-to-end en la fase 5.
+- **End to end (`e2e/`, Playwright):** recorren la app real (las mismas imágenes de producción) en un navegador:
+  - el administrador crea una farmacia y su dueña empieza a trabajar;
+  - la contraseña temporal obligatoria;
+  - una venta que se ve en vivo en el catálogo y el panel;
+  - el aviso al cruzar el stock mínimo.
+
+  Preparan los datos por la API pública (`tests/api.ts`), como un cliente cualquiera. Cada test crea su propia farmacia, así que corren en paralelo. Todo test falla si la consola del navegador muestra un error o un aviso (`fixtures.ts`), lo que detecta una CSP que bloquee algo o un script servido como HTML. En local usan el Edge instalado; en el CI, Chromium. Una mutación (apagar el tiempo real en el frontend) hace fallar los dos tests de tiempo real.
 - **Un test debe poder fallar.** Para los tests importantes, rompa a propósito el código que protegen y confirme que fallan (prueba de mutación) antes de darlos por buenos.
+
+## Integración continua
+
+`.github/workflows/ci.yml` corre en cada push a `main` y en cada pull request, con tres trabajos en paralelo:
+
+| Trabajo | Qué hace |
+|---|---|
+| Backend | Build en Release (los avisos cuentan como errores) y todos los tests. Los de integración usan Testcontainers: el servidor de GitHub tiene Docker |
+| Frontend | `npm ci`, lint, tests, build y `npm audit --omit=dev` |
+| End to end | Crea un `.env` con secretos de un solo uso, levanta `docker compose --profile app` y corre Playwright con Chromium. Si falla, sube el reporte y muestra los logs de la app |
+
+Dependabot (`.github/dependabot.yml`) abre cada semana pull requests con las dependencias desactualizadas: NuGet, npm, imágenes de Docker y acciones de GitHub. Cada uno pasa por el CI completo.
 
 ## Convenciones
 
