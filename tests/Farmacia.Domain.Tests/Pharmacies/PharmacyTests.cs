@@ -35,4 +35,18 @@ public class PharmacyTests
     {
         Assert.Throws<DomainException>(() => Pharmacy.Create(name, taxId));
     }
+
+    [Fact]
+    public void UpdateDetails_ChangesHowItIsPresented_ButNotItsNit()
+    {
+        var pharmacy = Pharmacy.Create("Droguería", "900123456-8");
+
+        pharmacy.UpdateDetails("  Droguería La Esperanza ", " Calle 10 ", "  ");
+
+        Assert.Equal("Droguería La Esperanza", pharmacy.Name);
+        Assert.Equal("Calle 10", pharmacy.Address);
+        Assert.Null(pharmacy.Phone);
+        Assert.Equal("900123456-8", pharmacy.TaxId.Value);
+        Assert.Throws<DomainException>(() => pharmacy.UpdateDetails("", null, null));
+    }
 }

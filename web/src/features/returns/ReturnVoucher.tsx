@@ -1,4 +1,5 @@
 import { formatDateTime, formatMoney } from '@/lib/format'
+import { PharmacyHeader } from '@/features/pharmacy/PharmacyHeader'
 import type { SaleReturn } from './api'
 
 /** The return voucher, printed like the ticket (the `ticket-print` class, 80 mm). */
@@ -6,7 +7,7 @@ export function ReturnVoucher({ saleReturn }: { saleReturn: SaleReturn }) {
   return (
     <div className="ticket-print grid gap-3 font-mono text-sm">
       <div className="text-center">
-        <div className="font-semibold">Farmacia</div>
+        <PharmacyHeader />
         <div>Devolución N.º {saleReturn.number}</div>
         <div>Del tiquete N.º {saleReturn.saleNumber}</div>
         <div className="text-muted-foreground">{formatDateTime(saleReturn.returnedAt)}</div>

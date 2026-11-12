@@ -1,4 +1,4 @@
-import { House, Pill, ShoppingCart, Truck, Undo2, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { House, Pill, ShoppingCart, Store, Truck, Undo2, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { can, type Policy } from '@/features/auth/permissions'
 import type { User } from '@/lib/api/types'
 
@@ -20,6 +20,7 @@ const sections: Section[] = [
   { to: '/caja', label: 'Caja', description: 'Abrir, registrar movimientos y cerrar el turno', icon: Wallet, policy: 'operateCash' },
   { to: '/compras', label: 'Compras', description: 'Recibir facturas de proveedores', icon: Truck, policy: 'receivePurchases' },
   { to: '/catalogo', label: 'Catálogo', description: 'Productos y presentaciones', icon: Pill, policy: 'manageCatalog' },
+  { to: '/farmacia', label: 'Mi farmacia', description: 'Nombre, NIT y dirección del tiquete; IVA de las compras', icon: Store, policy: 'managePharmacy' },
 ]
 
 export function sectionsFor(user: User | null): Section[] {

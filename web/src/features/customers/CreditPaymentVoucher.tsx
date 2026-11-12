@@ -1,4 +1,5 @@
 import { paymentMethodLabels } from '@/features/sales/labels'
+import { PharmacyHeader } from '@/features/pharmacy/PharmacyHeader'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import type { CreditPayment } from './api'
 
@@ -7,7 +8,7 @@ export function CreditPaymentVoucher({ payment }: { payment: CreditPayment }) {
   return (
     <div className="ticket-print grid gap-3 font-mono text-sm">
       <div className="text-center">
-        <div className="font-semibold">Farmacia</div>
+        <PharmacyHeader />
         <div>Abono N.º {payment.number}</div>
         <div className="text-muted-foreground">{formatDateTime(payment.receivedAt)}</div>
       </div>

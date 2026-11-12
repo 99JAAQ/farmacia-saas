@@ -76,6 +76,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | `OperateCash` | Dueño, cajero | Todo `/api/cash-sessions`, `/api/sales`, `/api/sale-returns` y `/api/credit-payments`; buscar clientes y ver su estado de cuenta en `/api/customers` |
 | `ManageInventory` | Dueño, bodeguero | Dar de baja lotes vencidos (`POST /api/batches/{id}/write-off`), ajustar por conteo (`POST /api/batches/{id}/adjust`) y el kardex (`GET /api/products/{id}/kardex`) |
 | `PaySuppliers` | Dueño | Pagar facturas de proveedores a crédito (`POST /api/purchases/{id}/payments`); se exige además de `ReceivePurchases` |
+| `ManagePharmacy` | Dueño | Editar los datos de la farmacia (`PUT /api/pharmacy`): nombre, dirección y teléfono del tiquete, y si el IVA de las compras es descontable. La lectura (`GET /api/pharmacy`) es para cualquier usuario de la farmacia, porque el cajero imprime su nombre y NIT. Ninguna de las dos lleva Id: siempre es la farmacia del token |
 | `ManagePlatform` | Administrador de la plataforma | `/api/platform/pharmacies`: listar las farmacias y crear una con su dueño |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
 

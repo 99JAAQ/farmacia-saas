@@ -54,6 +54,13 @@ describe('can (mirror of the API policies)', () => {
     expect(can(userWith('Cashier'), 'paySuppliers')).toBe(false)
   })
 
+  it('lets only the owner edit the pharmacy, and keeps the platform administrator out of every pharmacy screen', () => {
+    expect(can(userWith('Owner'), 'managePharmacy')).toBe(true)
+    expect(can(userWith('Cashier'), 'managePharmacy')).toBe(false)
+    for (const policy of ['managePharmacy', 'operateCash', 'manageCatalog', 'receivePurchases'] as const)
+      expect(can(userWith('PlatformAdmin'), policy)).toBe(false)
+  })
+
   it('does not let the cashier or an anonymous visitor manage the catalog', () => {
     expect(can(userWith('Cashier'), 'manageCatalog')).toBe(false)
     expect(can(null, 'manageCatalog')).toBe(false)

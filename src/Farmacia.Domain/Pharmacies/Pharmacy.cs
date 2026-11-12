@@ -33,5 +33,11 @@ public class Pharmacy : Entity
         Phone = Guard.Optional(phone);
     }
 
+    /// <summary>
+    /// What the owner may change: how the pharmacy is presented on tickets. The NIT stays: it is the legal identity
+    /// the platform registered the pharmacy with (unique across the platform).
+    /// </summary>
+    public void UpdateDetails(string name, string? address, string? phone) => Update(name, TaxId.Value, address, phone);
+
     public void SetVatResponsibility(bool isVatResponsible) => IsVatResponsible = isVatResponsible;
 }

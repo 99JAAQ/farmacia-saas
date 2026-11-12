@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router'
+import { PharmacyPage } from '@/features/pharmacy/PharmacyPage'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
               { path: 'clientes', element: <CustomersPage /> },
               { path: 'clientes/:id', element: <CustomerDetailPage /> },
             ],
+          },
+          {
+            element: <RequireRole policy="managePharmacy" />,
+            children: [{ path: 'farmacia', element: <PharmacyPage /> }],
           },
           {
             element: <RequireRole policy="receivePurchases" />,

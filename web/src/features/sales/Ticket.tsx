@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import { PharmacyHeader } from '@/features/pharmacy/PharmacyHeader'
 import { PrintDialog } from '@/components/PrintDialog'
 import { formatDateTime, formatMoney } from '@/lib/format'
 import type { Sale } from './api'
@@ -12,7 +13,7 @@ export function Ticket({ sale }: { sale: Sale }) {
   return (
     <div className="ticket-print grid gap-3 font-mono text-sm">
       <div className="text-center">
-        <div className="font-semibold">Farmacia</div>
+        <PharmacyHeader />
         <div>Tiquete N.º {sale.number}</div>
         <div className="text-muted-foreground">{formatDateTime(sale.soldAt)}</div>
       </div>

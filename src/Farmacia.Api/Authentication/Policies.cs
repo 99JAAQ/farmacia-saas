@@ -38,6 +38,12 @@ public static class Policies
     /// </summary>
     public const string PaySuppliers = nameof(PaySuppliers);
 
+    /// <summary>
+    /// Edit the pharmacy's own data (name, address and phone on the tickets; whether purchase VAT is deductible). The
+    /// owner only: the VAT setting changes the cost of what is received from then on.
+    /// </summary>
+    public const string ManagePharmacy = nameof(ManagePharmacy);
+
     /// <summary>Create pharmacies and their owners. The platform administrator only, who sees no pharmacy's data.</summary>
     public const string ManagePlatform = nameof(ManagePlatform);
 
@@ -57,6 +63,7 @@ public static class Policies
         options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
         options.AddPolicy(ManageInventory, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(PaySuppliers, policy => policy.RequireRole(Roles.Owner));
+        options.AddPolicy(ManagePharmacy, policy => policy.RequireRole(Roles.Owner));
         options.AddPolicy(ManagePlatform, policy => policy.RequireRole(Roles.PlatformAdmin));
     }
 }

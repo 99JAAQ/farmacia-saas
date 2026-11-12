@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react'
+import { usePharmacy } from '@/features/pharmacy/usePharmacy'
 import { NavLink, Outlet } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { roleLabels } from '@/features/auth/roles'
@@ -14,6 +15,7 @@ import { sectionsFor } from './navigation'
 export function AppLayout() {
   const { user, logout } = useAuth()
   const sections = sectionsFor(user)
+  const pharmacy = usePharmacy()
   const roles = user?.roles.map((role) => roleLabels[role]).join(', ')
 
   const links = sections.map(({ to, label, icon: Icon }) => (
@@ -37,8 +39,10 @@ export function AppLayout() {
   return (
     <div className="min-h-svh bg-muted md:grid md:grid-cols-[15rem_1fr]">
       <aside className="hidden border-r bg-sidebar md:sticky md:top-0 md:flex md:h-svh md:flex-col">
-        <div className="px-5 py-5">
+        <div className="grid gap-1 px-5 py-5">
           <Logo />
+          {/* Which pharmacy this session works in: with several on the platform, it must be obvious. */}
+          {pharmacy.data && <div className="truncate pl-[2.625rem] text-xs text-muted-foreground">{pharmacy.data.name}</div>}
         </div>
         <nav aria-label="Secciones" className="grid gap-1 px-3">
           {links}
