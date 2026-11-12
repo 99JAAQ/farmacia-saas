@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatDate, formatMoney } from '@/lib/format'
+import { formatDate, formatDateTime, formatMoney } from '@/lib/format'
 import { AddItemForm } from './AddItemForm'
 import { getPurchase, purchaseKeys, removePurchaseItem, type Purchase } from './api'
 import { ConfirmPurchaseDialog } from './ConfirmPurchaseDialog'
 import { InvoiceDiscountForm } from './InvoiceDiscountForm'
+import { SupplierPaymentsCard } from './SupplierPaymentsCard'
 import { paymentTermLabels, statusLabels, vatRateLabels } from './labels'
 
 export function PurchaseDetailPage() {
@@ -41,7 +42,7 @@ function PurchaseView({ purchase }: { purchase: Purchase }) {
       {!isDraft && purchase.confirmedAt && (
         <Alert>
           <AlertDescription>
-            Mercancía recibida el {new Date(purchase.confirmedAt).toLocaleString('es-CO')}: {purchase.items.length}{' '}
+            Mercancía recibida el {formatDateTime(purchase.confirmedAt)}: {purchase.items.length}{' '}
             {purchase.items.length === 1 ? 'lote entró' : 'lotes entraron'} al inventario con su costo real por unidad.
           </AlertDescription>
         </Alert>
@@ -77,6 +78,8 @@ function PurchaseView({ purchase }: { purchase: Purchase }) {
           )}
         </CardContent>
       </Card>
+
+      {!isDraft && purchase.paymentTerm === 'Credit' && <SupplierPaymentsCard purchase={purchase} />}
     </div>
   )
 }

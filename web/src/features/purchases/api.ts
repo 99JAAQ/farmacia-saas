@@ -56,6 +56,43 @@ export interface Purchase {
   confirmedAt: string | null
   totals: PurchaseTotals
   items: PurchaseItem[]
+  /** Paid to the supplier so far (credit invoices). */
+  amountPaid: number
+  /** Still owed: only a confirmed credit invoice owes anything. */
+  balance: number
+  /** Unpaid after its due date, on the pharmacy's date. */
+  isOverdue: boolean
+  payments: SupplierPayment[]
+}
+
+export type SupplierPaymentMethod = 'BankTransfer' | 'Cash' | 'Check'
+
+export interface SupplierPayment {
+  id: string
+  amount: number
+  method: SupplierPaymentMethod
+  /** The transfer or check number. */
+  reference: string | null
+  paidAt: string
+  paidByName: string
+}
+
+/** A credit invoice with something still owed. */
+export interface PayableInvoice {
+  purchaseId: string
+  supplierId: string
+  supplierName: string
+  invoiceNumber: string
+  invoiceDate: string
+  dueDate: string | null
+  total: number
+  amountPaid: number
+  balance: number
+  isOverdue: boolean
+  /** Days since it fell due; 0 when it is not overdue yet. */
+  daysOverdue: number
+  /** Days left until it falls due; negative once overdue. */
+  daysToDue: number | null
 }
 
 export interface PurchaseHeader {
@@ -70,6 +107,7 @@ export const purchaseKeys = {
   all: ['purchases'] as const,
   list: (status?: PurchaseStatus) => ['purchases', 'list', status ?? 'all'] as const,
   detail: (id: string) => ['purchases', 'detail', id] as const,
+  payables: ['purchases', 'payables'] as const,
 }
 
 export function listPurchases(status?: PurchaseStatus, signal?: AbortSignal): Promise<PurchaseSummary[]> {
@@ -114,4 +152,20 @@ export function setInvoiceDiscount(purchaseId: string, discount: number): Promis
 /** The batches enter the inventory. Fails (400) if the printed total differs by more than $1. */
 export function confirmPurchase(purchaseId: string, printedInvoiceTotal: number): Promise<Purchase> {
   return api<Purchase>(`/api/purchases/${purchaseId}/confirm`, { method: 'POST', body: { printedInvoiceTotal } })
+}
+
+/** Credit invoices still owed, the most overdue first. */
+export function listPayables(signal?: AbortSignal): Promise<PayableInvoice[]> {
+  return api<PayableInvoice[]>('/api/purchases/payables', { signal })
+}
+
+/** The owner pays part or all of a credit invoice, outside the register. */
+export async function registerSupplierPayment(
+  purchaseId: string, amount: number, method: SupplierPaymentMethod, reference: string | null,
+): Promise<string> {
+  const { id } = await api<{ id: string }>(`/api/purchases/${purchaseId}/payments`, {
+    method: 'POST',
+    body: { amount, method, reference },
+  })
+  return id
 }

@@ -68,7 +68,7 @@ Rutas actuales (`src/router.tsx`):
 | `/devoluciones` | `operateCash` | Buscar un tiquete por número, devolver por línea, comprobante |
 | `/clientes`, `/clientes/:id` | `operateCash` (administrar: `manageCredit`) | Clientes y fiado: búsqueda, quién debe, cupo, suspender, movimientos |
 | `/caja` | `operateCash` | Caja: abrir, movimientos, cerrar |
-| `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` | Lista, nueva compra, borrador o detalle |
+| `/compras`, `/compras/nueva`, `/compras/:id` | `receivePurchases` (pagar: `paySuppliers`) | Por pagar, borradores y recientes; nueva compra; borrador o detalle con sus pagos |
 | `/catalogo`, `/catalogo/:id` | `manageCatalog` (bajas, ajustes y movimientos: `manageInventory`) | Catálogo con stock y vencimientos; ficha del producto: datos, presentaciones, descontinuar, lotes, bajas y ajustes, movimientos |
 
 ## Apariencia
@@ -124,6 +124,9 @@ Rutas actuales (`src/router.tsx`):
   - El ajuste pide lo contado y el motivo, y muestra la diferencia en vivo antes de confirmar (`describeCount`, con tests): el bodeguero ve qué va a quedar registrado.
   - "Movimientos" es el kardex: fecha, documento o tipo de movimiento (con el motivo de un ajuste), lote, quién, cambio con signo y lo que quedó del producto.
   - Todo vive bajo la clave `['products', …]`, así que una baja o un ajuste refrescan a la vez los lotes, el kardex y el stock del catálogo.
+- **Cuentas por pagar (en Compras):**
+  - La lista de compras empieza con **"Por pagar"**: el total adeudado, cuántas facturas están vencidas y cada factura con su vencimiento en palabras (`describeDue`: "Vencida hace 38 días" en rojo, "Vence en 5 días" como aviso), la más vencida primero.
+  - El detalle de una compra a crédito confirmada muestra el total, lo pagado, el saldo, los pagos con quién los registró y, solo al dueño (`paySuppliers`), **"Registrar pago"**. El diálogo aplica las reglas del servidor antes de guardar (`paymentProblem`: no superar el saldo; transferencia y cheque con su número). El efectivo de la caja fuerte nunca envía referencia, aunque se haya escrito una antes de cambiar de medio.
 - **Tiquete y comprobante impresos:** `PrintDialog` (en `components/`) muestra el tiquete o el comprobante de devolución con el botón Imprimir; los dos llevan la clase `ticket-print`. `window.print()` con estilos `@media print` en `index.css` para impresora térmica de 80 mm, sin drivers ni librerías. Mientras hay un tiquete abierto, la app se quita con `display: none` (no solo se oculta, para que el rollo no avance papel en blanco), el diálogo pierde su centrado y todo se imprime en negro. El encabezado dice "Farmacia" mientras la API no exponga el nombre y el NIT de la farmacia.
 - **Accesibilidad:** cada campo tiene su `<Label htmlFor>`, los errores usan `role="alert"` y los resultados `role="status"` o `aria-live`.
 - **Componentes de `components/ui/`:** los genera la CLI de shadcn (`npx shadcn add <componente>`). Tienen una regla de oxlint propia en `.oxlintrc.json`.

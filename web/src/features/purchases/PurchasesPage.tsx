@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDate, formatMoney } from '@/lib/format'
 import { listPurchases, purchaseKeys, type PurchaseStatus, type PurchaseSummary } from './api'
 import { statusLabels } from './labels'
+import { PayablesCard } from './PayablesCard'
 
 export function PurchasesPage() {
   const drafts = useQuery({
@@ -26,6 +27,8 @@ export function PurchasesPage() {
           Nueva compra
         </Link>
       </div>
+
+      <PayablesCard />
 
       <Card>
         <CardHeader>
