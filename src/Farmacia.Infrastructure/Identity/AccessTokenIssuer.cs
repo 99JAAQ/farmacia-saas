@@ -30,10 +30,13 @@ internal sealed class AccessTokenIssuer(IOptions<JwtOptions> options, TimeProvid
                 [JwtRegisteredClaimNames.Jti] = Guid.CreateVersion7().ToString(),
                 [JwtRegisteredClaimNames.Email] = user.Email!,
                 [JwtRegisteredClaimNames.Name] = user.FullName,
-                [ClaimNames.PharmacyId] = user.PharmacyId.ToString(),
                 [ClaimNames.Role] = roles.ToArray(),
             },
         };
+
+        // The platform administrator has no pharmacy: without the claim, no business endpoint lets it in.
+        if (user.PharmacyId is { } pharmacyId)
+            descriptor.Claims[ClaimNames.PharmacyId] = pharmacyId.ToString();
 
         return (_handler.CreateToken(descriptor), expiresAt);
     }

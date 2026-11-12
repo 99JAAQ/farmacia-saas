@@ -149,7 +149,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return pharmacy.Id;
     }
 
-    public async Task<string> CreateUserAsync(Guid pharmacyId, string role)
+    /// <param name="pharmacyId">Null for the platform administrator.</param>
+    public async Task<string> CreateUserAsync(Guid? pharmacyId, string role)
     {
         var email = $"{role.ToLowerInvariant()}-{Guid.CreateVersion7():N}@farmacia.test";
 
@@ -165,12 +166,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     /// <summary>A client that sends the access token of a new user with the given role, as the web app will.</summary>
-    public async Task<HttpClient> LoggedInClientAsync(Guid pharmacyId, string role)
+    public async Task<HttpClient> LoggedInClientAsync(Guid pharmacyId, string role) =>
+        await LoggedInAsAsync(await CreateUserAsync(pharmacyId, role), Password);
+
+    /// <summary>A client of a new platform administrator: no pharmacy in its token.</summary>
+    public async Task<HttpClient> LoggedInPlatformAdminAsync() =>
+        await LoggedInAsAsync(await CreateUserAsync(null, Roles.PlatformAdmin), Password);
+
+    /// <summary>A client that sends the access token of an existing user.</summary>
+    public async Task<HttpClient> LoggedInAsAsync(string email, string password)
     {
-        var email = await CreateUserAsync(pharmacyId, role);
         var client = CreateHttpsClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password = Password });
+        var response = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
         response.EnsureSuccessStatusCode();
         var session = await response.Content.ReadFromJsonAsync<SessionDto>();
 

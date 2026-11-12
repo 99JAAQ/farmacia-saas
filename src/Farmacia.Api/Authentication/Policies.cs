@@ -38,11 +38,18 @@ public static class Policies
     /// </summary>
     public const string PaySuppliers = nameof(PaySuppliers);
 
+    /// <summary>Create pharmacies and their owners. The platform administrator only, who sees no pharmacy's data.</summary>
+    public const string ManagePlatform = nameof(ManagePlatform);
+
     internal static void Configure(AuthorizationOptions options)
     {
-        // Every endpoint requires a valid token unless it says [AllowAnonymous]:
-        // a controller that forgets [Authorize] stays protected instead of exposed.
-        options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+        // Every endpoint requires a valid token of a pharmacy's user unless it says [AllowAnonymous] or names its own
+        // policy: a controller that forgets [Authorize] stays protected instead of exposed. Requiring the pharmacy
+        // claim keeps the platform administrator (who has none) out of every business endpoint with a 403.
+        options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .RequireClaim(ClaimNames.PharmacyId)
+            .Build();
 
         options.AddPolicy(ManageCatalog, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
@@ -50,5 +57,6 @@ public static class Policies
         options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
         options.AddPolicy(ManageInventory, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
         options.AddPolicy(PaySuppliers, policy => policy.RequireRole(Roles.Owner));
+        options.AddPolicy(ManagePlatform, policy => policy.RequireRole(Roles.PlatformAdmin));
     }
 }

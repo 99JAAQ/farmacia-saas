@@ -11,7 +11,7 @@ namespace Farmacia.Api.Tests;
 public class SecurityConventionTests(ApiFactory api)
 {
     [Fact]
-    public async Task FallbackPolicy_RequiresAnAuthenticatedUser()
+    public async Task FallbackPolicy_RequiresAnAuthenticatedUserOfAPharmacy()
     {
         var policies = api.Services.GetRequiredService<IAuthorizationPolicyProvider>();
 
@@ -19,6 +19,10 @@ public class SecurityConventionTests(ApiFactory api)
 
         Assert.NotNull(fallback);
         Assert.Contains(fallback.Requirements, r => r is Microsoft.AspNetCore.Authorization.Infrastructure.DenyAnonymousAuthorizationRequirement);
+        // ...of a pharmacy: the platform administrator (no pharmacy_id) stays out of every business endpoint.
+        Assert.Contains(fallback.Requirements, r =>
+            r is Microsoft.AspNetCore.Authorization.Infrastructure.ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == Farmacia.Application.Authorization.ClaimNames.PharmacyId);
     }
 
     [Fact]

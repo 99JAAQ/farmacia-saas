@@ -1,10 +1,12 @@
-export type Role = 'Owner' | 'Cashier' | 'StockKeeper'
+/** PlatformAdmin creates pharmacies and belongs to none (pharmacyId null). */
+export type Role = 'Owner' | 'Cashier' | 'StockKeeper' | 'PlatformAdmin'
 
 export interface User {
   id: string
   email: string
   fullName: string
-  pharmacyId: string
+  /** Null only for the platform administrator. */
+  pharmacyId: string | null
   roles: Role[]
 }
 

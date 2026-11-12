@@ -5,6 +5,7 @@ using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Farmacia.Infrastructure.Persistence.Repositories;
 using Farmacia.Infrastructure.Persistence.Tenancy;
+using Farmacia.Infrastructure.Platform;
 using Farmacia.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditPaymentRepository, CreditPaymentRepository>();
         services.AddScoped<IKardexReader, KardexReader>();
         services.AddScoped<IDocumentNumberSequence, DocumentNumberSequence>();
+        services.AddScoped<IPlatformPharmacies, PlatformPharmacies>();
 
         // Identity core only (users, roles, password hashing, lockout): no cookies, the API issues its own JWT.
         services.AddIdentityCore<ApplicationUser>(options =>
@@ -60,7 +62,8 @@ public static class DependencyInjection
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<FarmaciaDbContext>();
+            .AddEntityFrameworkStores<FarmaciaDbContext>()
+            .AddErrorDescriber<SpanishIdentityErrorDescriber>();
 
         // Fails at startup, not at the first login, if the signing key is missing or too short.
         services.AddOptions<JwtOptions>()

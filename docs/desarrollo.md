@@ -55,7 +55,7 @@ Al arrancar en Development, `DevelopmentSeeder` crea los siguientes datos solo s
 
 - la farmacia "Droguería de Desarrollo";
 - los tres roles;
-- un usuario por rol: `dueno@farmacia.dev`, `cajero@farmacia.dev` y `bodega@farmacia.dev`, con la contraseña de `appsettings.Development.json`;
+- un usuario por rol: `dueno@farmacia.dev`, `cajero@farmacia.dev` y `bodega@farmacia.dev`, y el administrador de la plataforma `admin@farmacia.dev` (sin farmacia), con la contraseña de `appsettings.Development.json`;
 - el proveedor "Distribuidora de Desarrollo".
 
 ### 4. Frontend

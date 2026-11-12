@@ -1073,7 +1073,7 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("PharmacyId")
+                    b.Property<Guid?>("PharmacyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("PhoneNumber")
@@ -1754,8 +1754,7 @@ namespace Farmacia.Infrastructure.Persistence.Migrations
                     b.HasOne("Farmacia.Domain.Pharmacies.Pharmacy", null)
                         .WithMany()
                         .HasForeignKey("PharmacyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Farmacia.Infrastructure.Identity.RefreshToken", b =>

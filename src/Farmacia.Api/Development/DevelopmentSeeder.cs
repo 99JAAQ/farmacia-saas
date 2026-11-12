@@ -89,7 +89,8 @@ internal static class DevelopmentSeeder
                 Email = seed.Email,
                 EmailConfirmed = true,
                 FullName = seed.FullName,
-                PharmacyId = pharmacyId,
+                // The platform administrator belongs to no pharmacy.
+                PharmacyId = seed.Role == Roles.PlatformAdmin ? null : pharmacyId,
             };
 
             ThrowIfFailed(await userManager.CreateAsync(user, password));

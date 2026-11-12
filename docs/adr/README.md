@@ -18,6 +18,7 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0012](0012-inventario-bajas-y-ajustes-por-lote.md) | Inventario: bajas y ajustes por lote, y un kardex que dice quién hizo cada movimiento | Aceptada |
 | [0013](0013-cuentas-por-pagar-por-factura.md) | Cuentas por pagar por factura, fuera de la caja, solo por el dueño | Aceptada |
 | [0014](0014-row-level-security.md) | Row-Level Security de SQL Server como segunda línea de aislamiento entre farmacias | Aceptada |
+| [0015](0015-alta-de-farmacias-por-el-administrador.md) | Alta de farmacias por un administrador de la plataforma, y una farmacia por usuario | Aceptada |
 
 ## Cómo escribir uno nuevo
 

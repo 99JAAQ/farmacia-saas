@@ -46,7 +46,7 @@ dotnet run --project src/Farmacia.Api
 cd web && npm install && npm run dev
 ```
 
-En desarrollo se crean usuarios de prueba: `dueno@farmacia.dev`, `cajero@farmacia.dev` y `bodega@farmacia.dev`, con la contraseña definida en `src/Farmacia.Api/appsettings.Development.json`.
+En desarrollo se crean usuarios de prueba: `dueno@farmacia.dev`, `cajero@farmacia.dev`, `bodega@farmacia.dev` y el administrador de la plataforma `admin@farmacia.dev`, con la contraseña definida en `src/Farmacia.Api/appsettings.Development.json`.
 
 ## Documentación
 

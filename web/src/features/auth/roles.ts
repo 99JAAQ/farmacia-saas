@@ -4,4 +4,5 @@ export const roleLabels: Record<Role, string> = {
   Owner: 'Dueño',
   Cashier: 'Cajero',
   StockKeeper: 'Bodeguero',
+  PlatformAdmin: 'Administrador de la plataforma',
 }

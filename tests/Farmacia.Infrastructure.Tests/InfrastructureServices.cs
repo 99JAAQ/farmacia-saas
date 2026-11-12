@@ -11,8 +11,10 @@ internal static class InfrastructureServices
 {
     /// <param name="pharmacyId">Defaults to the fixture's shared pharmacy.</param>
     /// <param name="currentUser">The user making the requests, for the use cases that need one.</param>
+    /// <param name="noPharmacy">Requests without a pharmacy, like the platform administrator's.</param>
     public static ServiceProvider Build(
-        SqlServerFixture fixture, TimeProvider? time = null, Guid? pharmacyId = null, ICurrentUser? currentUser = null)
+        SqlServerFixture fixture, TimeProvider? time = null, Guid? pharmacyId = null, ICurrentUser? currentUser = null,
+        bool noPharmacy = false)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -30,16 +32,16 @@ internal static class InfrastructureServices
 
         services.AddApplication(mediatRLicenseKey: null);
         services.AddInfrastructure(configuration);
-        services.AddSingleton<ICurrentPharmacy>(new FixedPharmacy(pharmacyId ?? fixture.PharmacyId));
+        services.AddSingleton<ICurrentPharmacy>(new FixedPharmacy(noPharmacy ? null : pharmacyId ?? fixture.PharmacyId));
         if (currentUser is not null)
             services.AddSingleton(currentUser);
 
         return services.BuildServiceProvider();
     }
 
-    private sealed class FixedPharmacy(Guid pharmacyId) : ICurrentPharmacy
+    private sealed class FixedPharmacy(Guid? pharmacyId) : ICurrentPharmacy
     {
-        public Guid PharmacyId { get; } = pharmacyId;
-        public Guid? PharmacyIdOrNull => PharmacyId;
+        public Guid PharmacyId => pharmacyId ?? throw new InvalidOperationException("This test's requests have no pharmacy.");
+        public Guid? PharmacyIdOrNull => pharmacyId;
     }
 }

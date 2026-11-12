@@ -6,9 +6,9 @@
 |---|---|
 | Usuarios y contraseñas | ASP.NET Core Identity (solo el núcleo: usuarios, roles, hash y bloqueo) |
 | Sesión | JWT propio de 15 minutos + refresh token de 7 días en una cookie HttpOnly |
-| Permisos | Políticas con nombre (`Policies.cs`) sobre tres roles |
+| Permisos | Políticas con nombre (`Policies.cs`) sobre tres roles de farmacia y el administrador de la plataforma |
 | Aislamiento entre farmacias | El `PharmacyId` sale del JWT firmado; todo repositorio filtra por él, y Row-Level Security de SQL Server lo hace cumplir en la base |
-| Registro | No hay registro público: el dueño crea los usuarios |
+| Registro | No hay registro público: el administrador de la plataforma crea cada farmacia con su dueño, y el dueño crea los demás usuarios |
 
 ## Login y sesión
 
@@ -40,7 +40,7 @@ sequenceDiagram
 
 - **Lo firma la propia API** con HS256 y una clave de al menos 32 bytes, guardada en user-secrets (`Jwt:SigningKey`). Al arrancar se valida que la clave tenga la longitud mínima y que no sea degenerada (por ejemplo, todos los bytes iguales).
 - **Dura 15 minutos**, con 30 segundos de tolerancia de reloj, y el algoritmo está fijado: no se acepta un token firmado de otra forma.
-- **Claims:** `sub` (id del usuario), `email`, `name`, `pharmacy_id` y `role` (uno por rol).
+- **Claims:** `sub` (id del usuario), `email`, `name`, `pharmacy_id` y `role` (uno por rol). El administrador de la plataforma no tiene farmacia: su token no lleva `pharmacy_id`.
 - **El cliente lo guarda solo en memoria, nunca en `localStorage`.** Así, un script inyectado (XSS) no lo encuentra guardado.
 
 ### Refresh token
@@ -64,17 +64,19 @@ sequenceDiagram
 | `Owner` | Dueño | Todo |
 | `Cashier` | Cajero | Vender y manejar la caja |
 | `StockKeeper` | Bodeguero | Recibir compras y manejar el inventario |
+| `PlatformAdmin` | Administrador de la plataforma | Crear farmacias con su dueño. No pertenece a ninguna farmacia y no ve sus datos ([ADR 0015](adr/0015-alta-de-farmacias-por-el-administrador.md)) |
 
 Los controllers no nombran roles: usan **políticas con nombre**, definidas en un solo lugar (`src/Farmacia.Api/Authentication/Policies.cs`):
 
 | Política | Roles | Endpoints |
 |---|---|---|
-| *(fallback)* | Cualquier usuario autenticado | Todo endpoint sin `[AllowAnonymous]` |
+| *(fallback)* | Cualquier usuario autenticado **de una farmacia** (exige el claim `pharmacy_id`) | Todo endpoint sin `[AllowAnonymous]` ni política propia. El administrador de la plataforma recibe 403 |
 | `ManageCatalog` | Dueño, bodeguero | Crear y editar productos y presentaciones, desactivarlos, el catálogo con stock y los lotes con su costo, crear categorías; proveedores |
 | `ReceivePurchases` | Dueño, bodeguero | Todo `/api/purchases`, incluida la lectura, porque muestra costos |
 | `OperateCash` | Dueño, cajero | Todo `/api/cash-sessions`, `/api/sales`, `/api/sale-returns` y `/api/credit-payments`; buscar clientes y ver su estado de cuenta en `/api/customers` |
 | `ManageInventory` | Dueño, bodeguero | Dar de baja lotes vencidos (`POST /api/batches/{id}/write-off`), ajustar por conteo (`POST /api/batches/{id}/adjust`) y el kardex (`GET /api/products/{id}/kardex`) |
 | `PaySuppliers` | Dueño | Pagar facturas de proveedores a crédito (`POST /api/purchases/{id}/payments`); se exige además de `ReceivePurchases` |
+| `ManagePlatform` | Administrador de la plataforma | `/api/platform/pharmacies`: listar las farmacias y crear una con su dueño |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
 
 - **La fallback policy exige estar autenticado en todo endpoint.** Un controller que olvide `[Authorize]` queda protegido, no expuesto. Los únicos anónimos son `/health`, `login`, `refresh` y `logout` (y la documentación OpenAPI en Development). `SecurityConventionTests` falla si se quita la fallback policy o si aparece un endpoint anónimo nuevo: agregar uno debe ser una decisión consciente.
@@ -83,7 +85,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 
 ## Aislamiento entre farmacias (tenant)
 
-1. **Cada usuario pertenece a una sola farmacia** (`AspNetUsers.PharmacyId`), y esa farmacia viaja en el claim `pharmacy_id` del JWT firmado. El cliente no puede cambiarla sin invalidar la firma.
+1. **Cada usuario pertenece a una sola farmacia** (`AspNetUsers.PharmacyId`), y esa farmacia viaja en el claim `pharmacy_id` del JWT firmado. El cliente no puede cambiarla sin invalidar la firma. La única excepción es el administrador de la plataforma, que no tiene farmacia ni ve datos de ninguna.
 2. **`ICurrentPharmacy`, implementado por `HttpContextCurrentPharmacy`, lee la farmacia del token.** El `PharmacyId` **nunca** viene del body ni de la URL.
 3. **Todo método de repositorio recibe el `PharmacyId` y filtra por él.** El aislamiento está en la construcción misma, no depende de acordarse.
 4. **Un recurso de otra farmacia responde 404, nunca 403.** Responder 403 confirmaría que ese Id existe.
@@ -100,7 +102,7 @@ flowchart LR
 
 Los tests de la API usan dos farmacias (A y B) para comprobar este aislamiento por HTTP. `RowLevelSecurityTests` lo comprueba en la base con SQL sin `WHERE`, escrituras cruzadas, inyección contra el contexto, reutilización del pool y cobertura de toda tabla con `PharmacyId`.
 
-**Quién salta RLS:** solo `TenantDatabaseScope.BypassIsolation()`, que usan el seeder de desarrollo y la preparación de los tests (y, más adelante, el alta de farmacias). `SecurityConventionTests` falla si un controller o un caso de uso lo recibe. **Fuera de RLS:** las tablas de Identity, porque el login no conoce la farmacia antes de encontrar al usuario. **Límite:** RLS protege contra errores del código y contra inyección, no contra quien tenga las credenciales de la base. Para eso están Key Vault y un usuario de base de datos sin privilegios (fase 5; hoy la API usa `sa`).
+**Quién salta RLS:** solo `TenantDatabaseScope.BypassIsolation()`, que usan el seeder de desarrollo, la preparación de los tests y `PlatformPharmacies` (el alta y la lista de farmacias del administrador, en un scope de servicios propio). `SecurityConventionTests` falla si un controller o un caso de uso lo recibe. **Fuera de RLS:** las tablas de Identity, porque el login no conoce la farmacia antes de encontrar al usuario. **Límite:** RLS protege contra errores del código y contra inyección, no contra quien tenga las credenciales de la base. Para eso están Key Vault y un usuario de base de datos sin privilegios (fase 5; hoy la API usa `sa`).
 
 ## Secretos
 

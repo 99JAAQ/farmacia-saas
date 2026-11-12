@@ -24,4 +24,5 @@ public sealed record AuthResult(
     DateTimeOffset RefreshTokenExpiresAt,
     AuthenticatedUser User);
 
-public sealed record AuthenticatedUser(Guid Id, string Email, string FullName, Guid PharmacyId, IReadOnlyList<string> Roles);
+/// <param name="PharmacyId">Null only for the platform administrator, who belongs to no pharmacy.</param>
+public sealed record AuthenticatedUser(Guid Id, string Email, string FullName, Guid? PharmacyId, IReadOnlyList<string> Roles);

@@ -12,5 +12,14 @@ public static class Roles
     /// <summary>Bodeguero: receives purchases and manages inventory.</summary>
     public const string StockKeeper = "StockKeeper";
 
-    public static readonly IReadOnlyList<string> All = [Owner, Cashier, StockKeeper];
+    /// <summary>
+    /// Administrador de la plataforma: creates pharmacies and their owners. Belongs to no pharmacy, so it never sees
+    /// a pharmacy's sales, stock or customers (its token has no pharmacy_id).
+    /// </summary>
+    public const string PlatformAdmin = "PlatformAdmin";
+
+    /// <summary>The roles a pharmacy's own users can have.</summary>
+    public static readonly IReadOnlyList<string> PharmacyRoles = [Owner, Cashier, StockKeeper];
+
+    public static readonly IReadOnlyList<string> All = [.. PharmacyRoles, PlatformAdmin];
 }
