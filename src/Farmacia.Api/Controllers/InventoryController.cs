@@ -1,6 +1,7 @@
 using Farmacia.Api.Authentication;
 using Farmacia.Application.Inventory.AdjustBatchToCount;
 using Farmacia.Application.Inventory.GetProductKardex;
+using Farmacia.Application.Inventory.GetStockAlerts;
 using Farmacia.Application.Inventory.WriteOffExpiredBatch;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,15 @@ namespace Farmacia.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
 public sealed class InventoryController(ISender sender) : ControllerBase
 {
+    /// <summary>
+    /// What needs attention: products below their minimum, expired batches with units (to write off) and batches that
+    /// expire within 90 days. The screens refresh it on every "stock" notice (real time).
+    /// </summary>
+    [HttpGet("stock-alerts")]
+    [ProducesResponseType<StockAlertsDto>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<StockAlertsDto>> StockAlerts(CancellationToken cancellationToken) =>
+        await sender.Send(new GetStockAlertsQuery(), cancellationToken);
+
     /// <summary>A product's latest movements, newest first, with the product's and the batch's balance after each.</summary>
     [HttpGet("products/{id:guid}/kardex")]
     [ProducesResponseType<IReadOnlyList<KardexEntryDto>>(StatusCodes.Status200OK)]

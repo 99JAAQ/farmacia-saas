@@ -37,6 +37,10 @@ public sealed class InMemoryProductRepository : IProductRepository
         Task.FromResult<IReadOnlyList<Product>>(
             Items.Where(p => p.PharmacyId == pharmacyId && productIds.Contains(p.Id)).ToList());
 
+    public Task<IReadOnlyList<Product>> ListWithMinimumStockAsync(Guid pharmacyId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Product>>(
+            Items.Where(p => p.PharmacyId == pharmacyId && p.IsActive && p.MinimumStock != null).ToList());
+
     // Plain case-insensitive "contains": accent-insensitivity depends on SQL Server and is tested in the API tests.
     public Task<IReadOnlyList<Product>> SearchAsync(
         Guid pharmacyId, string? search, int take, CancellationToken cancellationToken, bool includeInactive = false) =>
@@ -142,6 +146,12 @@ public sealed class InMemorySupplierRepository : ISupplierRepository
 public sealed class InMemoryBatchRepository : IBatchRepository
 {
     public List<Batch> Items { get; } = [];
+
+    public Task<IReadOnlyList<Batch>> ListInStockExpiringByAsync(Guid pharmacyId, DateOnly date, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Batch>>(Items
+            .Where(b => b.PharmacyId == pharmacyId && b.Quantity > 0 && b.ExpirationDate <= date)
+            .OrderBy(b => b.ExpirationDate)
+            .ToList());
 
     public Task<IReadOnlyList<Batch>> GetInStockAsync(
         Guid pharmacyId, IReadOnlyCollection<Guid> productIds, CancellationToken cancellationToken) =>

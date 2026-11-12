@@ -373,6 +373,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddRowLevelSecurity` | Esquema `tenancy`, la función `fn_TenantAccess` y la política `PharmacyIsolation` sobre las tablas con `PharmacyId` y `Pharmacies` (escrita a mano: el modelo de EF no cambia; ver abajo) |
 | `AllowUsersWithoutPharmacy` | `AspNetUsers.PharmacyId` admite nulos, para el administrador de la plataforma (editada a mano: `Down` se detiene si hay usuarios sin farmacia, en vez de asignarles `Guid.Empty`) |
 | `AddUserStatus` | `AspNetUsers.IsActive` y `MustChangePassword` (editada a mano: `IsActive` con `defaultValue: true`, para no desactivar a los usuarios existentes) |
+| `AddProductMinimumStock` | `Products.MinimumStock` (opcional, en unidades base): por debajo, el producto aparece en las alertas |
 
 Comandos (desde la raíz del repo):
 

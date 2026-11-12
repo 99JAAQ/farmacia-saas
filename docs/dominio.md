@@ -59,6 +59,12 @@ Un producto (p. ej. "Acetaminofén 500 mg") tiene una unidad base ("Tableta") y 
 - **Cada movimiento dice quién lo causó** (`PerformedBy`): las operaciones de `Batch` (`Receive`, `Sell`, `Restock`, `WriteOffExpired`, `AdjustToCount`) reciben el usuario, y la compra, la venta y la devolución pasan el suyo. Ver [ADR 0012](adr/0012-inventario-bajas-y-ajustes-por-lote.md).
 - **Bajas y ajustes** (política `ManageInventory`: dueño y bodeguero): `WriteOffExpiredBatch` saca todas las unidades de un lote vencido (con la fecha de Colombia: uno que vence hoy todavía se vende); `AdjustBatchToCount` deja un lote en lo contado, con motivo obligatorio. Si una venta toma el mismo lote al mismo tiempo, el `RowVersion` del lote hace que una de las dos reciba 409.
 - **El kardex por producto es una consulta de lectura** (`IKardexReader`, el lado "Q" de CQRS): trae los movimientos más recientes y les pone el número de lote, el documento de origen ("Venta N.º 120", "Compra FE-77", "Devolución N.º 5") y el nombre de quien lo hizo. **El saldo del producto tras cada movimiento se calcula hacia atrás desde el stock actual:** el movimiento más reciente dejó lo que hay hoy, y cada uno anterior, eso menos el cambio del siguiente. Funciona porque todo cambio de stock pasa por el kardex.
+- **Alertas de stock** (`GetStockAlerts`, política `ManageInventory`):
+  - **Bajo el mínimo:** `Product.MinimumStock` es opcional, en unidades base, y lo define cada producto (2 cajas de un jarabe no son 2 cajas de tabletas). `Product.IsBelowMinimum` compara contra lo vendible, sin contar lo vencido, y nunca alerta por un producto descontinuado. Se ordena del más vacío al menos vacío, relativo a su mínimo.
+  - **Vencidos con unidades:** para darlos de baja.
+  - **Por vencer en 90 días:** el mismo horizonte que marca el catálogo. Un lote que vence hoy todavía se vende, así que va en "por vencer", no en "vencido".
+
+  Las alertas se refrescan en vivo con los avisos `stock` y `catalog` (ADR 0017), y la pantalla avisa cuando un producto **cruza** su mínimo.
 - **`FefoAllocator` solo planifica.** Recibe los lotes de un producto y la cantidad, y devuelve de qué lotes sacarla, empezando por el que vence primero. Quien vende aplica `Batch.Sell` a cada uno.
 
 ## Compras

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { MinimumStockEditor } from '@/features/inventory/MinimumStockEditor'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -83,6 +84,16 @@ function ProductView({ product }: { product: Product }) {
         </CardHeader>
         <CardContent>
           <SaleUnitsEditor product={product} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Stock mínimo</CardTitle>
+          <CardDescription>Por debajo de esta cantidad, el producto aparece en Alertas para pedirlo a tiempo.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MinimumStockEditor key={`${product.minimumStock}`} product={product} />
         </CardContent>
       </Card>
 

@@ -34,6 +34,12 @@ public class Product : TenantEntity
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
+    /// <summary>
+    /// Below this, in base units (tablets), the product shows up in the stock alerts. Null: no minimum (the default:
+    /// not every product deserves an alert). Each product its own: 2 boxes of a syrup is not 2 boxes of tablets.
+    /// </summary>
+    public int? MinimumStock { get; private set; }
+
     public IReadOnlyCollection<SaleUnit> SaleUnits => _saleUnits.AsReadOnly();
 
     public static Product Create(
@@ -92,6 +98,18 @@ public class Product : TenantEntity
     public void Deactivate() => IsActive = false;
 
     public void Activate() => IsActive = true;
+
+    /// <param name="baseUnits">The minimum in base units; null or 0 removes it.</param>
+    public void SetMinimumStock(int? baseUnits)
+    {
+        if (baseUnits < 0)
+            throw new DomainException("El stock mínimo no puede ser negativo.");
+
+        MinimumStock = baseUnits is null or 0 ? null : baseUnits;
+    }
+
+    /// <summary>Whether this stock (sellable units, not expired) is below the minimum. Never for a discontinued product.</summary>
+    public bool IsBelowMinimum(int sellableUnits) => IsActive && MinimumStock is { } minimum && sellableUnits < minimum;
 
     public void ChangeCategory(Guid? categoryId) => CategoryId = categoryId;
 

@@ -26,6 +26,8 @@ export interface Product {
   isActive: boolean
   /** Largest presentation first (the API orders them). */
   saleUnits: SaleUnit[]
+  /** Below this, in base units, it shows up in the stock alerts; null = no minimum. */
+  minimumStock: number | null
 }
 
 /** A product with its stock, in base units. */

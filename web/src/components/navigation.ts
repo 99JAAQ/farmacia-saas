@@ -1,4 +1,4 @@
-import { Building2, House, Pill, ShoppingCart, Store, Truck, Undo2, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { Bell, Building2, House, Pill, ShoppingCart, Store, Truck, Undo2, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { can, type Policy } from '@/features/auth/permissions'
 import type { User } from '@/lib/api/types'
 
@@ -20,6 +20,7 @@ const sections: Section[] = [
   { to: '/caja', label: 'Caja', description: 'Abrir, registrar movimientos y cerrar el turno', icon: Wallet, policy: 'operateCash' },
   { to: '/compras', label: 'Compras', description: 'Recibir facturas de proveedores', icon: Truck, policy: 'receivePurchases' },
   { to: '/catalogo', label: 'Catálogo', description: 'Productos y presentaciones', icon: Pill, policy: 'manageCatalog' },
+  { to: '/alertas', label: 'Alertas', description: 'Stock bajo el mínimo, lotes vencidos y por vencer', icon: Bell, policy: 'manageInventory' },
   { to: '/usuarios', label: 'Usuarios', description: 'Quién trabaja en la farmacia, sus roles y contraseñas', icon: UserCog, policy: 'manageUsers' },
   { to: '/farmacia', label: 'Mi farmacia', description: 'Nombre, NIT y dirección del tiquete; IVA de las compras', icon: Store, policy: 'managePharmacy' },
   { to: '/plataforma', label: 'Farmacias', description: 'Las farmacias de la plataforma y sus dueños', icon: Building2, policy: 'managePlatform' },

@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router'
+import { AlertsPage } from '@/features/inventory/AlertsPage'
 import { UsersPage } from '@/features/users/UsersPage'
 import { PlatformPage } from '@/features/platform/PlatformPage'
 import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
@@ -51,6 +52,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole policy="managePharmacy" />,
             children: [{ path: 'farmacia', element: <PharmacyPage /> }],
+          },
+          {
+            element: <RequireRole policy="manageInventory" />,
+            children: [{ path: 'alertas', element: <AlertsPage /> }],
           },
           {
             element: <RequireRole policy="manageUsers" />,

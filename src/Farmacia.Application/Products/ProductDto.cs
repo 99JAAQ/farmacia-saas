@@ -16,7 +16,8 @@ public sealed record ProductDto(
     string? SanitaryRegistration,
     Guid? CategoryId,
     bool IsActive,
-    IReadOnlyList<SaleUnitDto> SaleUnits)
+    IReadOnlyList<SaleUnitDto> SaleUnits,
+    int? MinimumStock)
 {
     public static ProductDto From(Product product) => new(
         product.Id,
@@ -33,7 +34,8 @@ public sealed record ProductDto(
         product.SaleUnits
             .OrderByDescending(u => u.ConversionFactor)
             .Select(u => new SaleUnitDto(u.Id, u.Name, u.ConversionFactor, u.Price, u.Barcode))
-            .ToList());
+            .ToList(),
+        product.MinimumStock);
 }
 
 public sealed record SaleUnitDto(Guid Id, string Name, int ConversionFactor, decimal Price, string? Barcode);

@@ -1,4 +1,7 @@
 import { LogOut } from 'lucide-react'
+import { useStockAlertCount } from '@/features/inventory/alerts'
+import { LowStockNotice } from '@/features/inventory/StockAlertsWatcher'
+import { can } from '@/features/auth/permissions'
 import { useRealtime } from '@/lib/realtime/useRealtime'
 import { usePharmacy } from '@/features/pharmacy/usePharmacy'
 import { Link, NavLink, Outlet } from 'react-router'
@@ -20,6 +23,8 @@ export function AppLayout() {
   // Live updates for every screen of a pharmacy's user (the hub refuses the platform administrator).
   useRealtime(user?.pharmacyId != null && !user.mustChangePassword)
   const roles = user?.roles.map((role) => roleLabels[role]).join(', ')
+  const watchesStock = can(user, 'manageInventory')
+  const alertCount = useStockAlertCount(watchesStock)
 
   const links = sections.map(({ to, label, icon: Icon }) => (
     <NavLink
@@ -36,6 +41,11 @@ export function AppLayout() {
     >
       <Icon className="size-4" aria-hidden="true" />
       {label}
+      {to === '/alertas' && alertCount > 0 && (
+        <span className="ml-auto rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning tabular-nums" aria-label={`${alertCount} alertas`}>
+          {alertCount}
+        </span>
+      )}
     </NavLink>
   ))
 
@@ -79,6 +89,7 @@ export function AppLayout() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">
+        {watchesStock && <LowStockNotice />}
         <Outlet />
       </main>
     </div>

@@ -25,6 +25,9 @@ public interface IBatchRepository
     /// <summary>Tracked: writing it off or adjusting it is saved, with its kardex entry, by the next SaveChanges.</summary>
     Task<Batch?> GetByIdAsync(Guid pharmacyId, Guid batchId, CancellationToken cancellationToken);
 
+    /// <summary>Batches with units that expire on or before the date (already expired ones included), read-only.</summary>
+    Task<IReadOnlyList<Batch>> ListInStockExpiringByAsync(Guid pharmacyId, DateOnly date, CancellationToken cancellationToken);
+
     /// <summary>A product's batches that still have units, the first to expire first. Read-only.</summary>
     Task<IReadOnlyList<Batch>> ListInStockByProductAsync(Guid pharmacyId, Guid productId, CancellationToken cancellationToken);
 

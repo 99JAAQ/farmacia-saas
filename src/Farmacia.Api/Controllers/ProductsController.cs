@@ -6,6 +6,7 @@ using Farmacia.Application.Products.GetCatalog;
 using Farmacia.Application.Products.GetProductBatches;
 using Farmacia.Application.Products.GetProductById;
 using Farmacia.Application.Products.SearchProducts;
+using Farmacia.Application.Products.SetMinimumStock;
 using Farmacia.Application.Products.SetProductActive;
 using Farmacia.Application.Products.UpdateProduct;
 using Farmacia.Application.Products.UpdateSaleUnit;
@@ -140,7 +141,23 @@ public sealed class ProductsController(ISender sender) : ControllerBase
         await sender.Send(new SetProductActiveCommand(id, Active: true), cancellationToken);
         return NoContent();
     }
+
+    /// <summary>Below this stock (in base units) the product shows up in the stock alerts; null removes it.</summary>
+    [HttpPut("{id:guid}/minimum-stock")]
+    [Authorize(Policy = Policies.ManageCatalog)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetMinimumStock(Guid id, MinimumStockRequest request, CancellationToken cancellationToken)
+    {
+        await sender.Send(new SetMinimumStockCommand(id, request.MinimumStock), cancellationToken);
+        return NoContent();
+    }
 }
+
+/// <param name="MinimumStock">In base units (tablets); null removes it.</param>
+public sealed record MinimumStockRequest(int? MinimumStock);
 
 public sealed record UpdateProductRequest(
     string Name,
