@@ -340,7 +340,13 @@ EXEC sp_set_session_context N'TenantBypass', 1;
 
 ASP.NET Core Identity vive en el mismo `FarmaciaDbContext`. Así, por ejemplo, una farmacia y su dueño se pueden crear en la misma transacción.
 
-- `AspNetUsers` tiene dos columnas propias: `PharmacyId` (cada usuario pertenece a una sola farmacia; es nulo solo para el administrador de la plataforma) y `FullName`. El `UserName` es el email.
+- `AspNetUsers` tiene cuatro columnas propias:
+  - `PharmacyId`: cada usuario pertenece a una sola farmacia; es nulo solo para el administrador de la plataforma.
+  - `FullName`.
+  - `IsActive`: un usuario desactivado no entra, y nunca se borra.
+  - `MustChangePassword`: tiene una contraseña temporal.
+
+  El `UserName` es el email.
 - `AspNetRoles` tiene cuatro roles: `Owner`, `Cashier`, `StockKeeper` y `PlatformAdmin`.
 - `AspNetUserRoles` relaciona usuarios y roles.
 - Las demás (`AspNetUserClaims`, `AspNetUserLogins`, `AspNetUserTokens`, `AspNetRoleClaims`) las crea Identity y hoy no se usan.
@@ -366,6 +372,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddSupplierPayments` | Pagos a proveedores por factura y `Purchases.AmountPaid` (0 en las compras existentes) |
 | `AddRowLevelSecurity` | Esquema `tenancy`, la función `fn_TenantAccess` y la política `PharmacyIsolation` sobre las tablas con `PharmacyId` y `Pharmacies` (escrita a mano: el modelo de EF no cambia; ver abajo) |
 | `AllowUsersWithoutPharmacy` | `AspNetUsers.PharmacyId` admite nulos, para el administrador de la plataforma (editada a mano: `Down` se detiene si hay usuarios sin farmacia, en vez de asignarles `Guid.Empty`) |
+| `AddUserStatus` | `AspNetUsers.IsActive` y `MustChangePassword` (editada a mano: `IsActive` con `defaultValue: true`, para no desactivar a los usuarios existentes) |
 
 Comandos (desde la raíz del repo):
 

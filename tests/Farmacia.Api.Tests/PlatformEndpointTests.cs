@@ -22,8 +22,14 @@ public class PlatformEndpointTests(ApiFactory api)
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var pharmacyId = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
-        // The owner logs in to the new pharmacy, which starts empty (and does not see the other pharmacies' products).
+        // The owner logs in to the new pharmacy with the password the administrator wrote, so must change it first.
         var owner = await api.LoggedInAsAsync(email, ApiFactory.Password);
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync("/api/products/catalog")).StatusCode);
+        var changed = await owner.PostAsJsonAsync("/api/auth/change-password", new { currentPassword = ApiFactory.Password, newPassword = "MiClave2026" });
+        owner.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            "Bearer", (await changed.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString());
+
+        // Then it works in its pharmacy, which starts empty (and does not see the other pharmacies' products).
         var me = await owner.GetFromJsonAsync<JsonElement>("/api/auth/me");
         Assert.Equal(pharmacyId.ToString(), me.GetProperty("pharmacyId").GetString());
         Assert.Equal(0, (await owner.GetFromJsonAsync<JsonElement>("/api/products/catalog")).GetArrayLength());

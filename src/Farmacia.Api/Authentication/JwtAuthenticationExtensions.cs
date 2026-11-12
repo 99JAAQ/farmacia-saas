@@ -42,6 +42,7 @@ internal static class JwtAuthenticationExtensions
             });
 
         services.AddAuthorization(Policies.Configure);
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PasswordChangedHandler>();
 
         // The current pharmacy (tenant) is read from the token of each request.
         services.AddHttpContextAccessor();

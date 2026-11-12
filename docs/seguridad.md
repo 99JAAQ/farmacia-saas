@@ -8,7 +8,7 @@
 | Sesión | JWT propio de 15 minutos + refresh token de 7 días en una cookie HttpOnly |
 | Permisos | Políticas con nombre (`Policies.cs`) sobre tres roles de farmacia y el administrador de la plataforma |
 | Aislamiento entre farmacias | El `PharmacyId` sale del JWT firmado; todo repositorio filtra por él, y Row-Level Security de SQL Server lo hace cumplir en la base |
-| Registro | No hay registro público: el administrador de la plataforma crea cada farmacia con su dueño, y el dueño crea los demás usuarios |
+| Registro | No hay registro público: el administrador de la plataforma crea cada farmacia con su dueño, y el dueño crea los demás usuarios, con una contraseña temporal que deben cambiar al entrar |
 
 ## Login y sesión
 
@@ -40,7 +40,7 @@ sequenceDiagram
 
 - **Lo firma la propia API** con HS256 y una clave de al menos 32 bytes, guardada en user-secrets (`Jwt:SigningKey`). Al arrancar se valida que la clave tenga la longitud mínima y que no sea degenerada (por ejemplo, todos los bytes iguales).
 - **Dura 15 minutos**, con 30 segundos de tolerancia de reloj, y el algoritmo está fijado: no se acepta un token firmado de otra forma.
-- **Claims:** `sub` (id del usuario), `email`, `name`, `pharmacy_id` y `role` (uno por rol). El administrador de la plataforma no tiene farmacia: su token no lleva `pharmacy_id`.
+- **Claims:** `sub` (id del usuario), `email`, `name`, `pharmacy_id` y `role` (uno por rol). El administrador de la plataforma no tiene farmacia: su token no lleva `pharmacy_id`. Con una contraseña temporal, el token lleva además `pwd_change` (ver abajo).
 - **El cliente lo guarda solo en memoria, nunca en `localStorage`.** Así, un script inyectado (XSS) no lo encuentra guardado.
 
 ### Refresh token
@@ -56,6 +56,15 @@ sequenceDiagram
 - **El mismo mensaje para "email no existe" y "contraseña incorrecta".** Cuando el email no existe, igual se verifica un hash falso, para que el tiempo de respuesta tampoco revele qué emails están registrados.
 - **La cuenta se bloquea 15 minutos** tras 5 intentos fallidos.
 - **Contraseña:** mínimo 8 caracteres, con mayúscula, minúscula y número, sin exigir símbolo. Es más útil la longitud que la complejidad para alguien que la escribe muchas veces al día.
+
+### Usuarios: desactivar y contraseñas temporales
+
+Detalle en el [ADR 0016](adr/0016-usuarios-de-la-farmacia.md).
+
+- **Desactivar** (`AspNetUsers.IsActive = false`) revoca todos los refresh tokens del usuario, y el login y el refresh lo rechazan. El access token que ya tiene dura hasta 15 minutos más. Los usuarios nunca se borran, porque ventas, turnos y kardex los referencian.
+- **Contraseña temporal:** quien crea un usuario o le restablece la contraseña escribe una temporal. El usuario queda con `MustChangePassword`, y su token lleva el claim `pwd_change`. **Toda política con nombre y la de respaldo exigen que ese claim no esté** (`PasswordChangedRequirement`). Hasta cambiarla, solo puede usar `/api/auth/me`, `POST /api/auth/change-password`, `refresh` y `logout`. Así, el dueño, que conoce la contraseña temporal, no puede trabajar con la cuenta de otro. `SecurityConventionTests` falla si una política no incluye el requisito.
+- **Cambiar la contraseña** pide la actual, cierra las demás sesiones del usuario y entrega un token nuevo sin la marca. **Restablecerla** también cierra las sesiones y desbloquea la cuenta.
+- **Nunca cero dueños activos,** y nadie se desactiva ni se cambia el rol a sí mismo.
 
 ## Roles y políticas
 
@@ -77,6 +86,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | `ManageInventory` | Dueño, bodeguero | Dar de baja lotes vencidos (`POST /api/batches/{id}/write-off`), ajustar por conteo (`POST /api/batches/{id}/adjust`) y el kardex (`GET /api/products/{id}/kardex`) |
 | `PaySuppliers` | Dueño | Pagar facturas de proveedores a crédito (`POST /api/purchases/{id}/payments`); se exige además de `ReceivePurchases` |
 | `ManagePharmacy` | Dueño | Editar los datos de la farmacia (`PUT /api/pharmacy`): nombre, dirección y teléfono del tiquete, y si el IVA de las compras es descontable. La lectura (`GET /api/pharmacy`) es para cualquier usuario de la farmacia, porque el cajero imprime su nombre y NIT. Ninguna de las dos lleva Id: siempre es la farmacia del token |
+| `ManageUsers` | Dueño | `/api/users`: listar, crear (con contraseña temporal), cambiar el rol, desactivar y reactivar, restablecer la contraseña. Un usuario de otra farmacia responde 404 |
 | `ManagePlatform` | Administrador de la plataforma | `/api/platform/pharmacies`: listar las farmacias y crear una con su dueño |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
 

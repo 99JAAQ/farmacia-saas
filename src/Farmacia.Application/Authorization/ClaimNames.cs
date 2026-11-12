@@ -7,4 +7,10 @@ public static class ClaimNames
     public const string PharmacyId = "pharmacy_id";
 
     public const string Role = "role";
+
+    /// <summary>
+    /// Present (value "true") while the user has a temporary password. Every business policy refuses a token that has
+    /// it: the user can only change the password (or sign out) until then.
+    /// </summary>
+    public const string MustChangePassword = "pwd_change";
 }

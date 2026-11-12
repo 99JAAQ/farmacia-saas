@@ -21,6 +21,7 @@ internal sealed class AuthService(
     private const string InvalidCredentials = "Correo o contraseña incorrectos.";
     private const string LockedOut = "La cuenta está bloqueada temporalmente por intentos fallidos. Intente más tarde.";
     private const string InvalidSession = "La sesión no es válida o expiró. Inicie sesión de nuevo.";
+    private const string Deactivated = "Su usuario está desactivado. Hable con el dueño de la farmacia.";
 
     // Verified when the email does not exist, so the response takes as long as a real password check
     // and timing does not reveal which emails are registered either.
@@ -47,6 +48,10 @@ internal sealed class AuthService(
 
         await userManager.ResetAccessFailedCountAsync(user);
 
+        // Only after the right password: the status of an account is not told to whoever does not know it.
+        if (!user.IsActive)
+            throw new UnauthorizedException(Deactivated);
+
         return await IssueAsync(user, familyId: Guid.CreateVersion7(), replacing: null, cancellationToken);
     }
 
@@ -68,7 +73,7 @@ internal sealed class AuthService(
             throw new UnauthorizedException(InvalidSession);
 
         var user = await userManager.FindByIdAsync(stored.UserId.ToString());
-        if (user is null || await userManager.IsLockedOutAsync(user))
+        if (user is null || !user.IsActive || await userManager.IsLockedOutAsync(user))
         {
             await RevokeFamilyAsync(stored.FamilyId, now, "User unavailable", cancellationToken);
             throw new UnauthorizedException(InvalidSession);
@@ -82,6 +87,29 @@ internal sealed class AuthService(
         var stored = await FindAsync(refreshToken, cancellationToken);
         if (stored is not null)
             await RevokeFamilyAsync(stored.FamilyId, time.GetUtcNow(), "Logout", cancellationToken);
+    }
+
+    public async Task<AuthResult> ChangePasswordAsync(
+        Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null || !user.IsActive)
+            throw new UnauthorizedException(InvalidSession);
+
+        if (currentPassword == newPassword)
+            throw new ValidationException("La contraseña nueva debe ser distinta de la actual.");
+
+        var result = await userManager.ChangePasswordAsync(user, currentPassword ?? "", newPassword ?? "");
+        if (!result.Succeeded)
+            throw new ValidationException(string.Join(" ", result.Errors.Select(e => e.Description)));
+
+        user.MustChangePassword = false;
+        await userManager.UpdateAsync(user);
+
+        // Whoever knew the old password (e.g. the owner, for a temporary one) is signed out everywhere.
+        await db.RevokeAllAsync(user.Id, time.GetUtcNow(), "Password changed", cancellationToken);
+
+        return await IssueAsync(user, familyId: Guid.CreateVersion7(), replacing: null, cancellationToken);
     }
 
     private async Task<AuthResult> IssueAsync(
@@ -105,7 +133,7 @@ internal sealed class AuthService(
             accessTokenExpiresAt,
             rawRefreshToken,
             refreshToken.ExpiresAt,
-            new AuthenticatedUser(user.Id, user.Email!, user.FullName, user.PharmacyId, roles));
+            new AuthenticatedUser(user.Id, user.Email!, user.FullName, user.PharmacyId, roles, user.MustChangePassword));
     }
 
     private Task<RefreshToken?> FindAsync(string rawToken, CancellationToken cancellationToken)

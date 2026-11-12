@@ -26,6 +26,29 @@ public class SecurityConventionTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task EveryPolicy_RefusesATemporaryPassword()
+    {
+        // A named policy without it would let the owner use a cashier's account with the password they gave them.
+        var policies = api.Services.GetRequiredService<IAuthorizationPolicyProvider>();
+        var names = typeof(Farmacia.Api.Authentication.Policies)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral)
+            .Select(f => (string)f.GetRawConstantValue()!)
+            .ToList();
+        Assert.NotEmpty(names);
+
+        foreach (var name in names)
+        {
+            var policy = await policies.GetPolicyAsync(name);
+            Assert.NotNull(policy);
+            Assert.Contains(policy.Requirements, r => r is Farmacia.Api.Authentication.PasswordChangedRequirement);
+        }
+
+        var fallback = await policies.GetFallbackPolicyAsync();
+        Assert.Contains(fallback!.Requirements, r => r is Farmacia.Api.Authentication.PasswordChangedRequirement);
+    }
+
+    [Fact]
     public void OnlyTheExpectedEndpoints_AllowAnonymousAccess()
     {
         // Adding a public endpoint must be a conscious decision: update this list on purpose.

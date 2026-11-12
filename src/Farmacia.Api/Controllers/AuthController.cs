@@ -50,6 +50,19 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// The signed-in user changes their password, also a temporary one (default policy: allowed while the token still
+    /// says "must change password"). Every other session ends; this one continues with a new token and cookie.
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType<SessionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SessionResponse>> ChangePassword(
+        ChangePasswordRequest request, [FromServices] Application.Abstractions.ICurrentUser currentUser, CancellationToken cancellationToken) =>
+        StartSession(await auth.ChangePasswordAsync(currentUser.UserId, request.CurrentPassword, request.NewPassword, cancellationToken));
+
     /// <summary>Who the access token belongs to. Lets the client check that its token works.</summary>
     [HttpGet("me")]
     [Authorize]
@@ -60,7 +73,8 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
         User.FindFirst(JwtRegisteredClaimNames.Email)?.Value,
         User.Identity?.Name,
         User.FindFirst(ClaimNames.PharmacyId)?.Value,
-        User.FindAll(ClaimNames.Role).Select(c => c.Value).ToList());
+        User.FindAll(ClaimNames.Role).Select(c => c.Value).ToList(),
+        User.HasClaim(c => c.Type == ClaimNames.MustChangePassword));
 
     private SessionResponse StartSession(AuthResult result)
     {
@@ -84,4 +98,6 @@ public sealed record LoginRequest(string Email, string Password);
 public sealed record SessionResponse(string AccessToken, DateTimeOffset AccessTokenExpiresAt, AuthenticatedUser User);
 
 public sealed record CurrentUserResponse(
-    string? UserId, string? Email, string? FullName, string? PharmacyId, IReadOnlyList<string> Roles);
+    string? UserId, string? Email, string? FullName, string? PharmacyId, IReadOnlyList<string> Roles, bool MustChangePassword);
+
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

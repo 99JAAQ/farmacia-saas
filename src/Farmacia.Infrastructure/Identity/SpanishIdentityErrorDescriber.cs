@@ -19,6 +19,9 @@ public sealed class SpanishIdentityErrorDescriber : IdentityErrorDescriber
     public override IdentityError InvalidUserName(string? userName) =>
         Error(nameof(InvalidUserName), $"El email «{userName}» no es válido.");
 
+    public override IdentityError PasswordMismatch() =>
+        Error(nameof(PasswordMismatch), "La contraseña actual no es correcta.");
+
     public override IdentityError PasswordTooShort(int length) =>
         Error(nameof(PasswordTooShort), $"La contraseña debe tener al menos {length} caracteres.");
 

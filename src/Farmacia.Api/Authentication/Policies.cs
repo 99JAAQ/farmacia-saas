@@ -44,6 +44,11 @@ public static class Policies
     /// </summary>
     public const string ManagePharmacy = nameof(ManagePharmacy);
 
+    /// <summary>
+    /// Create the pharmacy's users, change their role, deactivate them and reset their password. The owner only.
+    /// </summary>
+    public const string ManageUsers = nameof(ManageUsers);
+
     /// <summary>Create pharmacies and their owners. The platform administrator only, who sees no pharmacy's data.</summary>
     public const string ManagePlatform = nameof(ManagePlatform);
 
@@ -52,18 +57,26 @@ public static class Policies
         // Every endpoint requires a valid token of a pharmacy's user unless it says [AllowAnonymous] or names its own
         // policy: a controller that forgets [Authorize] stays protected instead of exposed. Requiring the pharmacy
         // claim keeps the platform administrator (who has none) out of every business endpoint with a 403.
+        // A temporary password (pwd_change claim) is refused everywhere too: until it is changed, the user can only
+        // reach the endpoints that use the default policy (/api/auth/me and change-password) and the anonymous ones.
         options.FallbackPolicy = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
             .RequireClaim(ClaimNames.PharmacyId)
+            .AddRequirements(new PasswordChangedRequirement())
             .Build();
 
-        options.AddPolicy(ManageCatalog, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
-        options.AddPolicy(ReceivePurchases, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
-        options.AddPolicy(OperateCash, policy => policy.RequireRole(Roles.Owner, Roles.Cashier));
-        options.AddPolicy(ManageCredit, policy => policy.RequireRole(Roles.Owner));
-        options.AddPolicy(ManageInventory, policy => policy.RequireRole(Roles.Owner, Roles.StockKeeper));
-        options.AddPolicy(PaySuppliers, policy => policy.RequireRole(Roles.Owner));
-        options.AddPolicy(ManagePharmacy, policy => policy.RequireRole(Roles.Owner));
-        options.AddPolicy(ManagePlatform, policy => policy.RequireRole(Roles.PlatformAdmin));
+        Add(options, ManageCatalog, Roles.Owner, Roles.StockKeeper);
+        Add(options, ReceivePurchases, Roles.Owner, Roles.StockKeeper);
+        Add(options, OperateCash, Roles.Owner, Roles.Cashier);
+        Add(options, ManageCredit, Roles.Owner);
+        Add(options, ManageInventory, Roles.Owner, Roles.StockKeeper);
+        Add(options, PaySuppliers, Roles.Owner);
+        Add(options, ManagePharmacy, Roles.Owner);
+        Add(options, ManageUsers, Roles.Owner);
+        Add(options, ManagePlatform, Roles.PlatformAdmin);
     }
+
+    /// <summary>Every named policy: one of the roles, and no temporary password pending.</summary>
+    private static void Add(AuthorizationOptions options, string name, params string[] roles) =>
+        options.AddPolicy(name, policy => policy.RequireRole(roles).AddRequirements(new PasswordChangedRequirement()));
 }

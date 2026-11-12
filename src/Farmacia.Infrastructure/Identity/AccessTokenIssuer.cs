@@ -38,6 +38,10 @@ internal sealed class AccessTokenIssuer(IOptions<JwtOptions> options, TimeProvid
         if (user.PharmacyId is { } pharmacyId)
             descriptor.Claims[ClaimNames.PharmacyId] = pharmacyId.ToString();
 
+        // With a temporary password, the policies only let the user change it (Policies.Configure).
+        if (user.MustChangePassword)
+            descriptor.Claims[ClaimNames.MustChangePassword] = "true";
+
         return (_handler.CreateToken(descriptor), expiresAt);
     }
 }

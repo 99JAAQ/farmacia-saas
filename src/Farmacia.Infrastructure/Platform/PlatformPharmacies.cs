@@ -50,6 +50,7 @@ public sealed class PlatformPharmacies(IServiceScopeFactory scopes) : IPlatformP
                 EmailConfirmed = true,
                 FullName = owner.FullName,
                 PharmacyId = pharmacy.Id,
+                MustChangePassword = true, // the administrator knows it
             };
             ThrowIfFailed(await users.CreateAsync(user, owner.Password));
             ThrowIfFailed(await users.AddToRoleAsync(user, Roles.Owner));
