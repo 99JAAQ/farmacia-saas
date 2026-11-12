@@ -7,7 +7,7 @@
 | Usuarios y contraseñas | ASP.NET Core Identity (solo el núcleo: usuarios, roles, hash y bloqueo) |
 | Sesión | JWT propio de 15 minutos + refresh token de 7 días en una cookie HttpOnly |
 | Permisos | Políticas con nombre (`Policies.cs`) sobre tres roles |
-| Aislamiento entre farmacias | El `PharmacyId` sale del JWT firmado; todo repositorio filtra por él |
+| Aislamiento entre farmacias | El `PharmacyId` sale del JWT firmado; todo repositorio filtra por él, y Row-Level Security de SQL Server lo hace cumplir en la base |
 | Registro | No hay registro público: el dueño crea los usuarios |
 
 ## Login y sesión
@@ -87,8 +87,20 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 2. **`ICurrentPharmacy`, implementado por `HttpContextCurrentPharmacy`, lee la farmacia del token.** El `PharmacyId` **nunca** viene del body ni de la URL.
 3. **Todo método de repositorio recibe el `PharmacyId` y filtra por él.** El aislamiento está en la construcción misma, no depende de acordarse.
 4. **Un recurso de otra farmacia responde 404, nunca 403.** Responder 403 confirmaría que ese Id existe.
+5. **Row-Level Security en SQL Server, como segunda línea** ([ADR 0014](adr/0014-row-level-security.md)). `TenantSessionInterceptor` escribe la farmacia del token en el `SESSION_CONTEXT` de cada conexión, de solo lectura, y la política `tenancy.PharmacyIsolation` filtra por ella toda tabla del negocio. Una consulta que olvide el `WHERE` solo ve la farmacia del token, y sin token no ve nada. Una escritura con el `PharmacyId` de otra farmacia la rechaza la base.
 
-Los tests de la API usan dos farmacias (A y B) para comprobar este aislamiento por HTTP.
+```mermaid
+flowchart LR
+    T[JWT: pharmacy_id] --> C[ICurrentPharmacy]
+    C --> R[Repositorio: WHERE PharmacyId = ...]
+    C --> I[TenantSessionInterceptor]
+    I -->|sp_set_session_context, solo lectura| S[(SQL Server: política RLS)]
+    R --> S
+```
+
+Los tests de la API usan dos farmacias (A y B) para comprobar este aislamiento por HTTP. `RowLevelSecurityTests` lo comprueba en la base con SQL sin `WHERE`, escrituras cruzadas, inyección contra el contexto, reutilización del pool y cobertura de toda tabla con `PharmacyId`.
+
+**Quién salta RLS:** solo `TenantDatabaseScope.BypassIsolation()`, que usan el seeder de desarrollo y la preparación de los tests (y, más adelante, el alta de farmacias). `SecurityConventionTests` falla si un controller o un caso de uso lo recibe. **Fuera de RLS:** las tablas de Identity, porque el login no conoce la farmacia antes de encontrar al usuario. **Límite:** RLS protege contra errores del código y contra inyección, no contra quien tenga las credenciales de la base. Para eso están Key Vault y un usuario de base de datos sin privilegios (fase 5; hoy la API usa `sa`).
 
 ## Secretos
 

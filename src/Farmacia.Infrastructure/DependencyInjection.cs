@@ -4,6 +4,7 @@ using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
 using Farmacia.Infrastructure.Persistence.Repositories;
+using Farmacia.Infrastructure.Persistence.Tenancy;
 using Farmacia.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,11 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException(
                 "Connection string 'Farmacia' is missing. Set it with: dotnet user-secrets set \"ConnectionStrings:Farmacia\" \"...\" --project src/Farmacia.Api");
 
-        services.AddDbContext<FarmaciaDbContext>(options => options.UseSqlServer(connectionString));
+        // Row-Level Security: every connection carries this scope's tenant (by default, the token's pharmacy).
+        services.AddScoped<TenantDatabaseScope>();
+        services.AddDbContext<FarmaciaDbContext>((provider, options) => options
+            .UseSqlServer(connectionString)
+            .AddInterceptors(new TenantSessionInterceptor(() => provider.GetRequiredService<TenantDatabaseScope>().Session)));
 
         // Scoped, like the DbContext: one unit of work per request.
         services.AddScoped<IUnitOfWork, UnitOfWork>();

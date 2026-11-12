@@ -10,7 +10,10 @@ namespace Farmacia.Api.Authentication;
 internal sealed class HttpContextCurrentPharmacy(IHttpContextAccessor httpContextAccessor) : ICurrentPharmacy
 {
     public Guid PharmacyId =>
+        PharmacyIdOrNull ?? throw new UnauthorizedException("La sesión no indica la farmacia. Inicie sesión de nuevo.");
+
+    public Guid? PharmacyIdOrNull =>
         Guid.TryParse(httpContextAccessor.HttpContext?.User.FindFirst(ClaimNames.PharmacyId)?.Value, out var pharmacyId)
             ? pharmacyId
-            : throw new UnauthorizedException("La sesión no indica la farmacia. Inicie sesión de nuevo.");
+            : null;
 }

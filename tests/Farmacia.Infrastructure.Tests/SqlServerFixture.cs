@@ -1,6 +1,7 @@
 using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Products;
 using Farmacia.Infrastructure.Persistence;
+using Farmacia.Infrastructure.Persistence.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
@@ -37,9 +38,14 @@ public sealed class SqlServerFixture : IAsyncLifetime
     public Task DisposeAsync() => _container.DisposeAsync().AsTask();
 
     /// <summary>A fresh context, so assertions read from the database and not from EF's memory.</summary>
-    public FarmaciaDbContext CreateContext() =>
+    /// <param name="session">
+    /// The Row-Level Security context. By default it bypasses isolation: tests set up and check data of several
+    /// pharmacies. RowLevelSecurityTests passes a pharmacy, or none, to see what a request would see.
+    /// </param>
+    public FarmaciaDbContext CreateContext(TenantSession? session = null) =>
         new(new DbContextOptionsBuilder<FarmaciaDbContext>()
             .UseSqlServer(_container.GetConnectionString())
+            .AddInterceptors(new TenantSessionInterceptor(() => session ?? TenantSession.Bypass))
             .Options);
 
     public async Task<Product> AddProductAsync(string name = "Acetaminofén 500 mg")

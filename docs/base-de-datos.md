@@ -318,6 +318,24 @@ Los demás índices aceleran consultas frecuentes: lotes de un producto por venc
 
 En la fase 6, el contador podrá entregar rangos de números por equipo para vender sin conexión.
 
+## Row-Level Security (aislamiento entre farmacias)
+
+Además del filtro por `PharmacyId` que pone cada repositorio, SQL Server aplica una política de Row-Level Security ([ADR 0014](adr/0014-row-level-security.md)):
+
+| Pieza | Qué hace |
+|---|---|
+| `tenancy.fn_TenantAccess(@PharmacyId)` | Deja pasar la fila si es de la farmacia de la sesión (`SESSION_CONTEXT(N'PharmacyId')`) o si la sesión salta el aislamiento (`SESSION_CONTEXT(N'TenantBypass') = 1`) |
+| `tenancy.PharmacyIsolation` | Aplica la función a las 23 tablas con `PharmacyId` y a `Pharmacies` (por su `Id`): `FILTER` (lo que se ve), `BLOCK AFTER INSERT` y `BLOCK AFTER UPDATE` (no se escribe ni se mueve una fila a otra farmacia) |
+| `TenantSessionInterceptor` (Infrastructure) | Al abrir cada conexión fija las dos claves, de solo lectura: la farmacia del token (o `NULL` sin token) y el bypass (0, o 1 solo en el seeder y en los tests) |
+
+Fuera de la política: las tablas de Identity (también `AspNetUsers`, porque el login busca al usuario antes de saber su farmacia), `RefreshTokens` y `__EFMigrationsHistory`.
+
+**Para consultar la base a mano** (Azure Data Studio, sqlcmd), sin contexto se ven 0 filas de negocio. Para verlas todas en esa conexión:
+
+```sql
+EXEC sp_set_session_context N'TenantBypass', 1;
+```
+
 ## Las tablas de Identity
 
 ASP.NET Core Identity vive en el mismo `FarmaciaDbContext`. Así, por ejemplo, una farmacia y su dueño se pueden crear en la misma transacción.
@@ -346,6 +364,7 @@ Están en `src/Farmacia.Infrastructure/Persistence/Migrations`, en orden:
 | `AddProductIsActive` | `Products.IsActive` (editada a mano: `defaultValue: true`, para no desactivar los productos existentes) |
 | `AddStockMovementPerformedBy` | `StockMovements.PerformedBy`: quién causó cada movimiento del kardex (admite nulos para los anteriores) |
 | `AddSupplierPayments` | Pagos a proveedores por factura y `Purchases.AmountPaid` (0 en las compras existentes) |
+| `AddRowLevelSecurity` | Esquema `tenancy`, la función `fn_TenantAccess` y la política `PharmacyIsolation` sobre las tablas con `PharmacyId` y `Pharmacies` (escrita a mano: el modelo de EF no cambia; ver abajo) |
 
 Comandos (desde la raíz del repo):
 
@@ -367,6 +386,8 @@ Reglas:
 - **Si EF responde `PendingModelChangesWarning`**, cambió el modelo y falta crear la migración.
 - **Detenga la API antes de crear una migración.** Si está corriendo, bloquea los archivos que hay que compilar.
 - **Los tests aplican las migraciones reales** a un SQL Server desechable. Si una migración está mal, los tests de integración lo detectan.
+- **Una tabla nueva con `PharmacyId` debe entrar en la política de RLS** en su misma migración: `migrationBuilder.AddTenantIsolation("Tabla")` en `Up()` y `RemoveTenantIsolation("Tabla")` en `Down()`, antes de borrarla. `RowLevelSecurityTests` falla si se olvida.
+- **Una migración que modifique datos** (no solo el esquema) no ve ninguna fila de las tablas con RLS, salvo que primero ejecute `EXEC sp_set_session_context N'TenantBypass', 1;` en el mismo bloque de SQL.
 
 ## Cómo conectarse a la base de desarrollo
 

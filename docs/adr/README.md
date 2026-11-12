@@ -17,6 +17,7 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0011](0011-catalogo-desactivar-y-precio-actual.md) | Catálogo: los productos se desactivan, no se borran, y solo se guarda el precio actual | Aceptada |
 | [0012](0012-inventario-bajas-y-ajustes-por-lote.md) | Inventario: bajas y ajustes por lote, y un kardex que dice quién hizo cada movimiento | Aceptada |
 | [0013](0013-cuentas-por-pagar-por-factura.md) | Cuentas por pagar por factura, fuera de la caja, solo por el dueño | Aceptada |
+| [0014](0014-row-level-security.md) | Row-Level Security de SQL Server como segunda línea de aislamiento entre farmacias | Aceptada |
 
 ## Cómo escribir uno nuevo
 

@@ -65,6 +65,7 @@ Farmacia.Infrastructure/
 │   ├── Migrations/            → migraciones de EF Core (generadas; no se editan salvo casos documentados)
 │   ├── Repositories/          → implementaciones de los repositorios de Application
 │   ├── Converters/            → NitConverter (Nit ↔ texto)
+│   ├── Tenancy/               → Row-Level Security: interceptor que fija la farmacia en cada conexión, bypass y helpers de migración
 │   ├── SearchPattern.cs       → búsqueda sin tildes ni mayúsculas
 │   └── UnitOfWork.cs          → SaveChanges + traducción de errores SQL a ConflictException
 ├── Identity/                  → ApplicationUser, AuthService, AccessTokenIssuer, RefreshToken, JwtOptions

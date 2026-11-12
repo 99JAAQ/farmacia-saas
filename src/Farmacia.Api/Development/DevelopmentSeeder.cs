@@ -4,6 +4,7 @@ using Farmacia.Domain.Pharmacies;
 using Farmacia.Domain.Suppliers;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
+using Farmacia.Infrastructure.Persistence.Tenancy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,10 @@ internal static class DevelopmentSeeder
     {
         await using var scope = app.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
+
+        // The seeder works above the tenants (it creates the pharmacy itself), so Row-Level Security must let it
+        // see every pharmacy. Only for this scope.
+        services.GetRequiredService<TenantDatabaseScope>().BypassIsolation();
 
         var db = services.GetRequiredService<FarmaciaDbContext>();
         var pharmacy = await EnsurePharmacyAsync(app.Configuration, db);

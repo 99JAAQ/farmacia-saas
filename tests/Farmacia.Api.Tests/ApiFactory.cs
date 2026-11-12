@@ -9,6 +9,7 @@ using Farmacia.Domain.Products;
 using Farmacia.Domain.Suppliers;
 using Farmacia.Infrastructure.Identity;
 using Farmacia.Infrastructure.Persistence;
+using Farmacia.Infrastructure.Persistence.Tenancy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -46,7 +47,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await _database.StartAsync();
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         await db.Database.MigrateAsync();
 
@@ -67,6 +68,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await _database.DisposeAsync();
     }
 
+    /// <summary>
+    /// A service scope that sees every pharmacy (Row-Level Security bypassed), to set up and check test data directly
+    /// in the database. Requests over HTTP still get the token's pharmacy.
+    /// </summary>
+    public AsyncServiceScope CreateSeedingScope()
+    {
+        var scope = Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantDatabaseScope>().BypassIsolation();
+        return scope;
+    }
+
     /// <summary>HTTPS base address: the refresh cookie is Secure, so it is only sent over HTTPS.</summary>
     public HttpClient CreateHttpsClient(bool handleCookies = true) =>
         CreateClient(new WebApplicationFactoryClientOptions
@@ -83,7 +95,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var product = Product.Create(pharmacyId, "Acetaminofén 500 mg", "Tableta", requiresPrescription: false);
         var box = product.AddSaleUnit("Caja x30", 30, 12_000m);
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         db.AddRange(supplier, product);
         await db.SaveChangesAsync();
@@ -100,7 +112,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var batch = Batch.Receive(pharmacyId, product.Id, "L1", new DateOnly(2030, 12, 31), tablets, 250m,
             new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.FromHours(-5)));
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         db.AddRange(product, batch);
         await db.SaveChangesAsync();
@@ -114,7 +126,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var batch = Batch.Receive(pharmacyId, productId, lot, expiration, quantity, 250m,
             new DateTimeOffset(2026, 1, 1, 9, 0, 0, TimeSpan.FromHours(-5)));
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         db.Batches.Add(batch);
         await db.SaveChangesAsync();
@@ -129,7 +141,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var pharmacy = Pharmacy.Create(
             "Droguería de Caja", Nit.FromNumber(Random.Shared.Next(100_000_000, 999_999_999).ToString()).Value);
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         db.Pharmacies.Add(pharmacy);
         await db.SaveChangesAsync();
@@ -141,7 +153,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         var email = $"{role.ToLowerInvariant()}-{Guid.CreateVersion7():N}@farmacia.test";
 
-        await using var scope = Services.CreateAsyncScope();
+        await using var scope = CreateSeedingScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = new ApplicationUser { UserName = email, Email = email, FullName = $"Usuario {role}", PharmacyId = pharmacyId };
 

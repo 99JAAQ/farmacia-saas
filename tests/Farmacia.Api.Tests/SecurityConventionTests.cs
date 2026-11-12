@@ -36,4 +36,20 @@ public class SecurityConventionTests(ApiFactory api)
 
         Assert.Equal(expected, anonymous);
     }
+
+    [Fact]
+    public void NoControllerOrUseCase_CanBypassRowLevelSecurity()
+    {
+        // The bypass sees every pharmacy: only the seeder, test setup and (later) creating a pharmacy may use it.
+        var types = typeof(Program).Assembly.GetTypes()
+            .Concat(typeof(Farmacia.Application.DependencyInjection).Assembly.GetTypes());
+
+        var offenders = types
+            .Where(t => t.GetConstructors().Any(c => c.GetParameters()
+                .Any(p => p.ParameterType == typeof(Farmacia.Infrastructure.Persistence.Tenancy.TenantDatabaseScope))))
+            .Select(t => t.FullName)
+            .ToList();
+
+        Assert.Empty(offenders);
+    }
 }

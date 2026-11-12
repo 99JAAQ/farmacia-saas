@@ -40,5 +40,6 @@ internal static class InfrastructureServices
     private sealed class FixedPharmacy(Guid pharmacyId) : ICurrentPharmacy
     {
         public Guid PharmacyId { get; } = pharmacyId;
+        public Guid? PharmacyIdOrNull => PharmacyId;
     }
 }

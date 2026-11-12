@@ -25,7 +25,7 @@ public class CatalogSearchEndpointTests(ApiFactory api)
         var product = Product.Create(pharmacyId, name, "Tableta", false, activeIngredient: ingredient);
         product.AddSaleUnit("Caja x30", 30, 12_000m, barcode);
 
-        await using var scope = api.Services.CreateAsyncScope();
+        await using var scope = api.CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         db.Products.Add(product);
         await db.SaveChangesAsync();

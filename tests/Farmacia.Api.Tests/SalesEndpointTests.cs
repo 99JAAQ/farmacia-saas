@@ -128,7 +128,7 @@ public class SalesEndpointTests(ApiFactory api)
         Assert.Single(statuses, HttpStatusCode.Created);
         Assert.Single(statuses, s => s is HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
 
-        await using var scope = api.Services.CreateAsyncScope();
+        await using var scope = api.CreateSeedingScope();
         var db = scope.ServiceProvider.GetRequiredService<FarmaciaDbContext>();
         Assert.Equal(1, await db.Sales.CountAsync(s => s.PharmacyId == pharmacyId));
         Assert.Equal(0, (await db.Batches.SingleAsync(b => b.ProductId == productId)).Quantity);

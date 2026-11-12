@@ -6,5 +6,12 @@ namespace Farmacia.Application.Abstractions;
 /// </summary>
 public interface ICurrentPharmacy
 {
+    /// <summary>The pharmacy of the request; throws (401) when there is none.</summary>
     Guid PharmacyId { get; }
+
+    /// <summary>
+    /// The pharmacy, or null when the request has none (an anonymous endpoint such as the login).
+    /// The database connection uses it to set the Row-Level Security context without failing.
+    /// </summary>
+    Guid? PharmacyIdOrNull { get; }
 }

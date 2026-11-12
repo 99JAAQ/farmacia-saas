@@ -16,6 +16,7 @@ namespace Farmacia.Application.Tests.Fakes;
 public sealed class FakeCurrentPharmacy(Guid pharmacyId) : ICurrentPharmacy
 {
     public Guid PharmacyId { get; } = pharmacyId;
+    public Guid? PharmacyIdOrNull => PharmacyId;
 }
 
 public sealed class FakeClock(DateTimeOffset now) : IClock
