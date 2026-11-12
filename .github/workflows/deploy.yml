@@ -63,7 +63,7 @@ jobs:
         id: infra
         run: |
           az deployment group create -g "$RG" -n "infra-$GITHUB_RUN_ID" -f infra/main.bicep \
-            -p deployApp=false containerImage="$APP_IMAGE" \
+            -p deployApp=false containerImage="$APP_IMAGE" location="${{ vars.AZURE_LOCATION }}" \
                deployerObjectId="${{ vars.DEPLOYER_OBJECT_ID }}" \
                sqlAdminObjectId="${{ vars.SQL_ADMIN_GROUP_ID }}" sqlAdminLogin="${{ vars.SQL_ADMIN_GROUP_NAME }}" \
                bootstrapAdminEmail="${{ vars.BOOTSTRAP_ADMIN_EMAIL }}" budgetEmail="${{ vars.BUDGET_EMAIL }}" \
@@ -122,7 +122,7 @@ jobs:
         id: app
         run: |
           url=$(az deployment group create -g "$RG" -n "app-$GITHUB_RUN_ID" -f infra/main.bicep \
-            -p deployApp=true containerImage="$APP_IMAGE" \
+            -p deployApp=true containerImage="$APP_IMAGE" location="${{ vars.AZURE_LOCATION }}" \
                deployerObjectId="${{ vars.DEPLOYER_OBJECT_ID }}" \
                sqlAdminObjectId="${{ vars.SQL_ADMIN_GROUP_ID }}" sqlAdminLogin="${{ vars.SQL_ADMIN_GROUP_NAME }}" \
                bootstrapAdminEmail="${{ vars.BOOTSTRAP_ADMIN_EMAIL }}" budgetEmail="${{ vars.BUDGET_EMAIL }}" \

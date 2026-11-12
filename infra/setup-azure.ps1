@@ -21,7 +21,9 @@ param(
   [Parameter(Mandatory)] [string] $BootstrapAdminEmail,
   [Parameter(Mandatory)] [string] $BudgetEmail,
   [string] $ResourceGroup = 'rg-farmacia-demo',
-  [string] $Location = 'eastus2',
+  # Not every region accepts new SQL servers on a free trial (East US, East US 2 and West US 2 did not): check it
+  # first (docs/despliegue.md, "Si algo falla").
+  [string] $Location = 'centralus',
   [string] $Repository = '99JAAQ/farmacia-saas',
   [string] $AppRegistrationName = 'github-farmacia-saas',
   [string] $SqlAdminGroupName = 'farmacia-sql-admins'
@@ -44,7 +46,7 @@ function Invoke-AzJson {
 }
 
 $account = Invoke-AzCli account show --output json | ConvertFrom-Json
-Write-Host "Suscripción: $($account.name) ($($account.id))"
+Write-Host "SuscripciÃ³n: $($account.name) ($($account.id))"
 
 Write-Host 'Proveedores de recursos...'
 foreach ($provider in 'Microsoft.App', 'Microsoft.OperationalInsights', 'Microsoft.Sql', 'Microsoft.KeyVault', 'Microsoft.ManagedIdentity', 'Microsoft.Consumption') {
@@ -54,16 +56,23 @@ foreach ($provider in 'Microsoft.App', 'Microsoft.OperationalInsights', 'Microso
 Write-Host "Grupo de recursos $ResourceGroup en $Location..."
 $group = Invoke-AzCli group create --name $ResourceGroup --location $Location --output json | ConvertFrom-Json
 
-Write-Host "Registro de aplicación $AppRegistrationName (sin secreto: OIDC)..."
+Write-Host "Registro de aplicaciÃ³n $AppRegistrationName (sin secreto: OIDC)..."
 $appId = Invoke-AzCli ad app list --display-name $AppRegistrationName --query '[0].appId' --output tsv
 if (-not $appId) { $appId = Invoke-AzCli ad app create --display-name $AppRegistrationName --query appId --output tsv }
 $spId = Invoke-AzCli ad sp list --filter "appId eq '$appId'" --query '[0].id' --output tsv
 if (-not $spId) { $spId = Invoke-AzCli ad sp create --id $appId --query id --output tsv }
 
-$subject = "repo:${Repository}:ref:refs/heads/main"
+# GitHub's OIDC subject includes the owner's and the repository's numeric ids
+# (repo:owner@<id>/name@<id>:ref:...): a repository deleted and recreated with the same name by someone else does not
+# inherit the access.
+$ids = gh api "repos/$Repository" --jq '[.owner.id, .id] | join(" ")'
+if ($LASTEXITCODE -ne 0) { throw "gh api repos/$Repository failed" }
+$ownerId, $repoId = $ids -split ' '
+$owner, $name = $Repository -split '/'
+$subject = "repo:${owner}@${ownerId}/${name}@${repoId}:ref:refs/heads/main"
 $existing = @(Invoke-AzJson ad app federated-credential list --id $appId | Where-Object { $_.subject -eq $subject })
 if ($existing.Count -eq 0) {
-  $credential = @{ name = 'github-main'; issuer = 'https://token.actions.githubusercontent.com'; subject = $subject; audiences = @('api://AzureADTokenExchange') } | ConvertTo-Json -Compress
+  $credential = @{ name = 'github-main-ids'; issuer = 'https://token.actions.githubusercontent.com'; subject = $subject; audiences = @('api://AzureADTokenExchange') } | ConvertTo-Json -Compress
   $file = New-TemporaryFile
   Set-Content -Path $file -Value $credential -Encoding utf8
   Invoke-AzCli ad app federated-credential create --id $appId --parameters "@$file" --output none
@@ -92,6 +101,7 @@ $variables = [ordered]@{
   AZURE_TENANT_ID       = $account.tenantId
   AZURE_SUBSCRIPTION_ID = $account.id
   AZURE_RESOURCE_GROUP  = $ResourceGroup
+  AZURE_LOCATION        = $Location
   DEPLOYER_OBJECT_ID    = $spId
   SQL_ADMIN_GROUP_ID    = $groupId
   SQL_ADMIN_GROUP_NAME  = $SqlAdminGroupName
@@ -104,4 +114,4 @@ foreach ($name in $variables.Keys) {
 }
 
 Write-Host ''
-Write-Host 'Listo. El próximo CI exitoso en main despliega la demo (o ejecute el workflow "Deploy" a mano).'
+Write-Host 'Listo. El prÃ³ximo CI exitoso en main despliega la demo (o ejecute el workflow "Deploy" a mano).'

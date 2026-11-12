@@ -4,7 +4,7 @@
 
 targetScope = 'resourceGroup'
 
-@description('Region. East US 2 has every service of the free offers; Brazil South is closer but check the SQL free offer there first.')
+@description('Region of every resource. It must accept new SQL servers for the subscription (free trials are restricted in some regions): Central US does.')
 param location string = resourceGroup().location
 
 @description('Short name used in every resource name.')
