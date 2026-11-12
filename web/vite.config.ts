@@ -20,6 +20,8 @@ export default defineConfig({
     proxy: {
       '/api': apiUrl,
       '/health': apiUrl,
+      // The real-time hub: WebSockets too.
+      '/hubs': { target: apiUrl, ws: true },
     },
   },
   test: {

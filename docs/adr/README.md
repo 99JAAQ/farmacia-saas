@@ -20,6 +20,7 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0014](0014-row-level-security.md) | Row-Level Security de SQL Server como segunda línea de aislamiento entre farmacias | Aceptada |
 | [0015](0015-alta-de-farmacias-por-el-administrador.md) | Alta de farmacias por un administrador de la plataforma, y una farmacia por usuario | Aceptada |
 | [0016](0016-usuarios-de-la-farmacia.md) | Usuarios de la farmacia: desactivar en vez de borrar, contraseña temporal obligatoria y nunca sin dueño | Aceptada |
+| [0017](0017-tiempo-real-con-avisos-delgados.md) | Tiempo real con SignalR: avisos delgados por farmacia, enviados después del commit | Aceptada |
 
 ## Cómo escribir uno nuevo
 

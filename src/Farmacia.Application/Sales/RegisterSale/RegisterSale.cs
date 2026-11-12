@@ -1,4 +1,5 @@
 using Farmacia.Application.Abstractions;
+using Farmacia.Application.Abstractions.Realtime;
 using Farmacia.Application.Abstractions.Persistence;
 using Farmacia.Application.Cash;
 using Farmacia.Application.Common.Exceptions;
@@ -34,7 +35,8 @@ public sealed class RegisterSaleHandler(
     ICurrentPharmacy currentPharmacy,
     ICurrentUser currentUser,
     IClock clock,
-    SaleReader reader) : IRequestHandler<RegisterSaleCommand, SaleDto>
+    SaleReader reader,
+    IRealtimeNotifications realtime) : IRequestHandler<RegisterSaleCommand, SaleDto>
 {
     public async Task<SaleDto> Handle(RegisterSaleCommand command, CancellationToken cancellationToken)
     {
@@ -81,6 +83,11 @@ public sealed class RegisterSaleHandler(
         // with a 409 (RowVersion on the batch or the account).
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // Sent once the use case returns (after this commit): the day's totals and every product's stock changed.
+        realtime.Add(RealtimeTopics.Sales, sale.Id);
+        foreach (var productId in productIds)
+            realtime.Add(RealtimeTopics.Stock, productId);
 
         return await reader.ToDtoAsync(sale, cancellationToken);
     }

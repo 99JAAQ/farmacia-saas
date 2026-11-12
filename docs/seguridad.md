@@ -66,6 +66,12 @@ Detalle en el [ADR 0016](adr/0016-usuarios-de-la-farmacia.md).
 - **Cambiar la contraseña** pide la actual, cierra las demás sesiones del usuario y entrega un token nuevo sin la marca. **Restablecerla** también cierra las sesiones y desbloquea la cuenta.
 - **Nunca cero dueños activos,** y nadie se desactiva ni se cambia el rol a sí mismo.
 
+### Tiempo real (SignalR)
+
+- **El hub `/hubs/pharmacy` exige la política `UsePharmacy`:** un usuario de una farmacia, sin contraseña temporal. Cada conexión entra al grupo de **su** farmacia, tomado del token, nunca del cliente. Detalle en el [ADR 0017](adr/0017-tiempo-real-con-avisos-delgados.md).
+- **El token en la URL solo vale para el hub.** El navegador no puede enviar cabeceras al abrir un WebSocket, así que SignalR manda `?access_token=`. `OnMessageReceived` lo lee solo si la ruta es la del hub; en la API REST se ignora (test `TheTokenInTheQueryString_IsAcceptedOnlyByTheHub`). Ojo: una URL con token puede quedar en logs de proxies, otra razón para que el access token dure solo 15 minutos.
+- **Los avisos no llevan datos:** solo un tema y, a veces, un Id. Una conexión que sobrevive a su token (SignalR autentica solo al conectar) no recibe nada que su usuario no pudiera ver: los datos se piden por REST, con un token vigente.
+
 ## Roles y políticas
 
 | Rol | En español | Para qué |
@@ -87,6 +93,7 @@ Los controllers no nombran roles: usan **políticas con nombre**, definidas en u
 | `PaySuppliers` | Dueño | Pagar facturas de proveedores a crédito (`POST /api/purchases/{id}/payments`); se exige además de `ReceivePurchases` |
 | `ManagePharmacy` | Dueño | Editar los datos de la farmacia (`PUT /api/pharmacy`): nombre, dirección y teléfono del tiquete, y si el IVA de las compras es descontable. La lectura (`GET /api/pharmacy`) es para cualquier usuario de la farmacia, porque el cajero imprime su nombre y NIT. Ninguna de las dos lleva Id: siempre es la farmacia del token |
 | `ManageUsers` | Dueño | `/api/users`: listar, crear (con contraseña temporal), cambiar el rol, desactivar y reactivar, restablecer la contraseña. Un usuario de otra farmacia responde 404 |
+| `UsePharmacy` | Cualquier usuario de una farmacia, sin contraseña temporal (la misma regla que la de respaldo) | El hub de tiempo real `/hubs/pharmacy`, que necesita una política con nombre |
 | `ManagePlatform` | Administrador de la plataforma | `/api/platform/pharmacies`: listar las farmacias y crear una con su dueño |
 | `ManageCredit` | Dueño | Crear clientes, abrir la cuenta de fiado, cambiar el cupo, suspender y reanudar, lista de deudores. Se exige además de `OperateCash` (las dos políticas a la vez) |
 

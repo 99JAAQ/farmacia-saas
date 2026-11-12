@@ -3,7 +3,9 @@ using Farmacia.Api.Authentication;
 using Farmacia.Api.Development;
 using Farmacia.Api.ErrorHandling;
 using Farmacia.Api.OpenApi;
+using Farmacia.Api.Realtime;
 using Farmacia.Application;
+using Farmacia.Application.Abstractions.Realtime;
 using Farmacia.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +28,10 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.C
 builder.Services.AddApiDocumentation();
 builder.Services.AddHealthChecks();
 
+// Real time (phase 4): thin "changed" notices to each pharmacy's open screens. Replaces the no-op publisher.
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IRealtimePublisher, SignalRRealtimePublisher>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -44,6 +50,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<PharmacyHub>(PharmacyHub.Path);
 app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();

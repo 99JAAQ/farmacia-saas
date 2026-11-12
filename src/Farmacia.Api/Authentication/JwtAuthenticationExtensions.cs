@@ -39,6 +39,19 @@ internal static class JwtAuthenticationExtensions
                     NameClaimType = JwtRegisteredClaimNames.Name,
                     RoleClaimType = ClaimNames.Role,
                 };
+
+                // Browsers cannot send headers when opening a WebSocket, so the SignalR client sends the access token
+                // in the query string. Accepted only on the hub's path, never on the REST endpoints.
+                bearer.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.HttpContext.Request.Path.StartsWithSegments(Realtime.PharmacyHub.Path)
+                            && context.Request.Query["access_token"] is [{ Length: > 0 } token])
+                            context.Token = token;
+                        return Task.CompletedTask;
+                    },
+                };
             });
 
         services.AddAuthorization(Policies.Configure);

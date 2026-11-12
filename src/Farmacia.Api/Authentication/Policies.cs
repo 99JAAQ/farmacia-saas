@@ -49,6 +49,12 @@ public static class Policies
     /// </summary>
     public const string ManageUsers = nameof(ManageUsers);
 
+    /// <summary>
+    /// Any user of a pharmacy, without a temporary password: the same rule as the fallback policy, with a name so the
+    /// real-time hub can use it (a hub needs an explicit policy).
+    /// </summary>
+    public const string UsePharmacy = nameof(UsePharmacy);
+
     /// <summary>Create pharmacies and their owners. The platform administrator only, who sees no pharmacy's data.</summary>
     public const string ManagePlatform = nameof(ManagePlatform);
 
@@ -59,11 +65,8 @@ public static class Policies
         // claim keeps the platform administrator (who has none) out of every business endpoint with a 403.
         // A temporary password (pwd_change claim) is refused everywhere too: until it is changed, the user can only
         // reach the endpoints that use the default policy (/api/auth/me and change-password) and the anonymous ones.
-        options.FallbackPolicy = new AuthorizationPolicyBuilder()
-            .RequireAuthenticatedUser()
-            .RequireClaim(ClaimNames.PharmacyId)
-            .AddRequirements(new PasswordChangedRequirement())
-            .Build();
+        options.FallbackPolicy = PharmacyUserPolicy();
+        options.AddPolicy(UsePharmacy, PharmacyUserPolicy());
 
         Add(options, ManageCatalog, Roles.Owner, Roles.StockKeeper);
         Add(options, ReceivePurchases, Roles.Owner, Roles.StockKeeper);
@@ -75,6 +78,12 @@ public static class Policies
         Add(options, ManageUsers, Roles.Owner);
         Add(options, ManagePlatform, Roles.PlatformAdmin);
     }
+
+    private static AuthorizationPolicy PharmacyUserPolicy() => new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireClaim(ClaimNames.PharmacyId)
+        .AddRequirements(new PasswordChangedRequirement())
+        .Build();
 
     /// <summary>Every named policy: one of the roles, and no temporary password pending.</summary>
     private static void Add(AuthorizationOptions options, string name, params string[] roles) =>
