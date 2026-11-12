@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Farmacia.Api.Authentication;
 using Farmacia.Api.Development;
 using Farmacia.Api.ErrorHandling;
+using Farmacia.Api.Hosting;
 using Farmacia.Api.OpenApi;
 using Farmacia.Api.Realtime;
 using Farmacia.Application;
@@ -42,8 +43,25 @@ if (app.Environment.IsDevelopment())
     app.MapApiDocumentation();
     await DevelopmentSeeder.SeedAsync(app);
 }
+else if (!app.Environment.IsEnvironment("Testing"))
+{
+    // Production: TLS ends at Azure's ingress, which forwards the original scheme and client IP in X-Forwarded-*
+    // headers (read because ASPNETCORE_FORWARDEDHEADERS_ENABLED=true, set in the Dockerfile).
+    app.UseHsts();
+    await ProductionBootstrap.RunAsync(app.Services, app.Configuration, app.Logger);
+}
 
+app.UseSecurityHeaders();
 app.UseHttpsRedirection();
+
+// The React build (wwwroot, copied by the Dockerfile): public files, served before authentication runs.
+app.UseDefaultFiles(); // "/" serves index.html
+app.UseStaticFiles();
+
+// Explicit, and after the static files: otherwise minimal hosting adds routing at the very start, the SPA fallback
+// matches /assets/app.js first, and the static files middleware skips any request that already has an endpoint
+// (every script would come back as index.html).
+app.UseRouting();
 
 // Order matters: first find out who the caller is, then decide what they may do.
 app.UseAuthentication();
@@ -52,5 +70,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<PharmacyHub>(PharmacyHub.Path);
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapSpa();
 
 app.Run();

@@ -52,7 +52,8 @@ public class SecurityConventionTests(ApiFactory api)
     public void OnlyTheExpectedEndpoints_AllowAnonymousAccess()
     {
         // Adding a public endpoint must be a conscious decision: update this list on purpose.
-        string[] expected = ["api/auth/login", "api/auth/logout", "api/auth/refresh", "health"];
+        // Plus the React app's fallback (index.html for client-side routes): the page, not its data.
+        string[] expected = ["api/auth/login", "api/auth/logout", "api/auth/refresh", "health", Hosting.WebHosting.SpaFallbackPattern.Trim('/')];
 
         var anonymous = api.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
@@ -61,7 +62,7 @@ public class SecurityConventionTests(ApiFactory api)
             .Order()
             .ToArray();
 
-        Assert.Equal(expected, anonymous);
+        Assert.Equal(expected.Order(), anonymous);
     }
 
     [Fact]

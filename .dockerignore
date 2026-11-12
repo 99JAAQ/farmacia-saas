@@ -1,0 +1,13 @@
+# Only the sources go into the build context: never secrets, local builds or dependencies.
+.env
+.git
+.vs
+.vscode
+**/bin
+**/obj
+**/*.user
+web/node_modules
+web/dist
+tests
+docs
+*.md

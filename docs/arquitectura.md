@@ -16,7 +16,9 @@ flowchart LR
     api -- "EF Core" --> db
 ```
 
-En desarrollo, Vite sirve el frontend en el puerto 5173 y reenvía (proxy) `/api` y `/health` a la API en el 5228. Así el navegador ve un solo origen, no hace falta configurar CORS y la cookie `SameSite=Strict` funciona igual que en producción.
+En desarrollo, Vite sirve el frontend en el puerto 5173 y reenvía (proxy) `/api`, `/hubs` y `/health` a la API en el 5228. Así el navegador ve un solo origen, no hace falta configurar CORS y la cookie `SameSite=Strict` funciona igual que en producción.
+
+En producción hay **un solo contenedor**: la API sirve también el build de React desde `wwwroot`, en el mismo origen. Las migraciones van en una imagen aparte que se ejecuta antes de desplegar la app. Ver [ADR 0019](adr/0019-un-contenedor-para-api-y-frontend.md).
 
 ## Clean Architecture: cuatro proyectos y una regla
 

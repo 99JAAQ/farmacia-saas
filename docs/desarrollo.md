@@ -76,6 +76,18 @@ Abra http://localhost:5173. La documentación interactiva de la API está en htt
 
 Otra opción es `src/Farmacia.Api/Farmacia.Api.http`, que tiene ejemplos listos para ejecutar desde Visual Studio o VS Code (con la extensión REST Client).
 
+## Correr el sistema completo en Docker (como en producción)
+
+```bash
+docker compose --profile app up --build    # http://localhost:8080
+```
+
+- **Dos imágenes:** `migrator` aplica las migraciones a su propia base (`FarmaciaCompose`, no la de desarrollo) y termina; después arranca `app`, con el frontend y la API en un solo contenedor (ver [ADR 0019](adr/0019-un-contenedor-para-api-y-frontend.md)).
+- **Necesita en `.env`** `JWT_SIGNING_KEY` y `BOOTSTRAP_ADMIN_PASSWORD` (ver `.env.example`).
+- **Al arrancar se crea el administrador de la plataforma** (`BOOTSTRAP_ADMIN_EMAIL`, por defecto `admin@farmacia.local`), que debe cambiar la contraseña al entrar. Desde ahí se crea la primera farmacia.
+- **No hay datos de prueba:** es una plataforma vacía, como un despliegue nuevo.
+- **Para apagarlo sin tocar la base de desarrollo:** `docker compose --profile app rm -sf app migrate`.
+
 ## Depurar
 
 - **Visual Studio:** abra `Farmacia.slnx`, elija `Farmacia.Api` como proyecto de inicio y presione F5. Se abre `/scalar` y puede poner breakpoints en controllers, handlers o el dominio.

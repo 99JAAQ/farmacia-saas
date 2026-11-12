@@ -22,6 +22,7 @@ Un ADR (*Architecture Decision Record*) registra una decisión importante: el co
 | [0016](0016-usuarios-de-la-farmacia.md) | Usuarios de la farmacia: desactivar en vez de borrar, contraseña temporal obligatoria y nunca sin dueño | Aceptada |
 | [0017](0017-tiempo-real-con-avisos-delgados.md) | Tiempo real con SignalR: avisos delgados por farmacia, enviados después del commit | Aceptada; modificada por 0018 |
 | [0018](0018-avisos-desde-lo-que-se-guarda.md) | Los avisos de tiempo real salen de lo que se guardó, no de cada caso de uso | Aceptada |
+| [0019](0019-un-contenedor-para-api-y-frontend.md) | Un solo contenedor: la API sirve el frontend en el mismo origen | Aceptada |
 
 ## Cómo escribir uno nuevo
 

@@ -1,30 +1,25 @@
 import { createBrowserRouter, Navigate } from 'react-router'
-import { AlertsPage } from '@/features/inventory/AlertsPage'
-import { UsersPage } from '@/features/users/UsersPage'
-import { PlatformPage } from '@/features/platform/PlatformPage'
-import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
-import { PharmacyPage } from '@/features/pharmacy/PharmacyPage'
 import { AppLayout } from '@/components/AppLayout'
+import { FullScreenLoader } from '@/components/FullScreenLoader'
+import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
-import { CashPage } from '@/features/cash/CashPage'
-import { CatalogPage } from '@/features/catalog/CatalogPage'
-import { ProductDetailPage } from '@/features/catalog/ProductDetailPage'
-import { CustomerDetailPage } from '@/features/customers/CustomerDetailPage'
-import { CustomersPage } from '@/features/customers/CustomersPage'
-import { NewPurchasePage } from '@/features/purchases/NewPurchasePage'
-import { PurchaseDetailPage } from '@/features/purchases/PurchaseDetailPage'
-import { PurchasesPage } from '@/features/purchases/PurchasesPage'
-import { ReturnsPage } from '@/features/returns/ReturnsPage'
-import { SellPage } from '@/features/sales/SellPage'
 import { HomePage } from '@/pages/HomePage'
+
+/**
+ * Each section loads when it is first opened (code splitting): the first visit downloads only the login, the layout
+ * and the home page. The register's computer then caches the rest; a cashier never downloads the purchases screens.
+ */
+const page = (load: () => Promise<{ default: React.ComponentType }>) => async () => ({ Component: (await load()).default })
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
     // Everything below needs a session.
     element: <RequireAuth />,
+    // Shown while the code of a lazily loaded section downloads, when the app starts on it (a reload on /catalogo).
+    hydrateFallbackElement: <FullScreenLoader label="Cargando…" />,
     children: [
       // Full screen, outside the layout: with a temporary password it is the only screen the user can use.
       { path: 'cambiar-clave', element: <ChangePasswordPage /> },
@@ -35,42 +30,42 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole policy="manageCatalog" />,
             children: [
-              { path: 'catalogo', element: <CatalogPage /> },
-              { path: 'catalogo/:id', element: <ProductDetailPage /> },
+              { path: 'catalogo', lazy: page(() => import('@/features/catalog/CatalogPage').then((m) => ({ default: m.CatalogPage }))) },
+              { path: 'catalogo/:id', lazy: page(() => import('@/features/catalog/ProductDetailPage').then((m) => ({ default: m.ProductDetailPage }))) },
             ],
           },
           {
             element: <RequireRole policy="operateCash" />,
             children: [
-              { path: 'caja', element: <CashPage /> },
-              { path: 'vender', element: <SellPage /> },
-              { path: 'devoluciones', element: <ReturnsPage /> },
-              { path: 'clientes', element: <CustomersPage /> },
-              { path: 'clientes/:id', element: <CustomerDetailPage /> },
+              { path: 'caja', lazy: page(() => import('@/features/cash/CashPage').then((m) => ({ default: m.CashPage }))) },
+              { path: 'vender', lazy: page(() => import('@/features/sales/SellPage').then((m) => ({ default: m.SellPage }))) },
+              { path: 'devoluciones', lazy: page(() => import('@/features/returns/ReturnsPage').then((m) => ({ default: m.ReturnsPage }))) },
+              { path: 'clientes', lazy: page(() => import('@/features/customers/CustomersPage').then((m) => ({ default: m.CustomersPage }))) },
+              { path: 'clientes/:id', lazy: page(() => import('@/features/customers/CustomerDetailPage').then((m) => ({ default: m.CustomerDetailPage }))) },
             ],
           },
           {
             element: <RequireRole policy="managePharmacy" />,
-            children: [{ path: 'farmacia', element: <PharmacyPage /> }],
+            children: [{ path: 'farmacia', lazy: page(() => import('@/features/pharmacy/PharmacyPage').then((m) => ({ default: m.PharmacyPage }))) }],
           },
           {
             element: <RequireRole policy="manageInventory" />,
-            children: [{ path: 'alertas', element: <AlertsPage /> }],
+            children: [{ path: 'alertas', lazy: page(() => import('@/features/inventory/AlertsPage').then((m) => ({ default: m.AlertsPage }))) }],
           },
           {
             element: <RequireRole policy="manageUsers" />,
-            children: [{ path: 'usuarios', element: <UsersPage /> }],
+            children: [{ path: 'usuarios', lazy: page(() => import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage }))) }],
           },
           {
             element: <RequireRole policy="managePlatform" />,
-            children: [{ path: 'plataforma', element: <PlatformPage /> }],
+            children: [{ path: 'plataforma', lazy: page(() => import('@/features/platform/PlatformPage').then((m) => ({ default: m.PlatformPage }))) }],
           },
           {
             element: <RequireRole policy="receivePurchases" />,
             children: [
-              { path: 'compras', element: <PurchasesPage /> },
-              { path: 'compras/nueva', element: <NewPurchasePage /> },
-              { path: 'compras/:id', element: <PurchaseDetailPage /> },
+              { path: 'compras', lazy: page(() => import('@/features/purchases/PurchasesPage').then((m) => ({ default: m.PurchasesPage }))) },
+              { path: 'compras/nueva', lazy: page(() => import('@/features/purchases/NewPurchasePage').then((m) => ({ default: m.NewPurchasePage }))) },
+              { path: 'compras/:id', lazy: page(() => import('@/features/purchases/PurchaseDetailPage').then((m) => ({ default: m.PurchaseDetailPage }))) },
             ],
           },
         ],

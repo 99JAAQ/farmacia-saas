@@ -41,6 +41,22 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // after Program.cs has already read the connection string while registering services.
         builder.UseSetting("ConnectionStrings:Farmacia", _database.GetConnectionString());
         builder.UseSetting("Jwt:SigningKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
+
+        // A stand-in for the React build (the Dockerfile copies the real one to wwwroot).
+        builder.UseSetting(WebHostDefaults.WebRootKey, WebRoot);
+    }
+
+    /// <summary>A minimal index.html, so the tests can check the app's fallback without building the frontend.</summary>
+    private static readonly string WebRoot = CreateWebRoot();
+
+    private static string CreateWebRoot()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"farmacia-wwwroot-{Guid.CreateVersion7():N}");
+        Directory.CreateDirectory(path);
+        File.WriteAllText(Path.Combine(path, "index.html"), "<!doctype html><title>Farmacia de prueba</title><div id=\"root\"></div>");
+        Directory.CreateDirectory(Path.Combine(path, "assets"));
+        File.WriteAllText(Path.Combine(path, "assets", "app-abc123.js"), "console.log('farmacia')");
+        return path;
     }
 
     public async Task InitializeAsync()

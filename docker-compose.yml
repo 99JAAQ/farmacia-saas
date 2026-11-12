@@ -1,5 +1,7 @@
-# Local development database.
-# Setup: copy .env.example to .env and set MSSQL_SA_PASSWORD, then run `docker compose up -d`.
+# Local environment.
+# Setup: copy .env.example to .env and fill it in.
+#   docker compose up -d                       only SQL Server, for development (dotnet run + npm run dev)
+#   docker compose --profile app up --build    the whole app as it runs in production, on http://localhost:8080
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -22,6 +24,35 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  # Applies the migrations to its own database (not the development one) and exits, as the deployment does.
+  migrate:
+    profiles: [app]
+    build:
+      context: .
+      target: migrator
+    command: ["--connection", "Server=sqlserver;Database=FarmaciaCompose;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  app:
+    profiles: [app]
+    build:
+      context: .
+      target: final
+    ports:
+      - "8080:8080"
+    environment:
+      # Local only: sa. In Azure the app connects with its managed identity and a user without DDL rights.
+      ConnectionStrings__Farmacia: "Server=sqlserver;Database=FarmaciaCompose;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env (see .env.example)}
+      MediatR__LicenseKey: ${MEDIATR_LICENSE_KEY:-}
+      Bootstrap__AdminEmail: ${BOOTSTRAP_ADMIN_EMAIL:-admin@farmacia.local}
+      Bootstrap__AdminPassword: ${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in .env (see .env.example)}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   sqlserver-data:
