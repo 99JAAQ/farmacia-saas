@@ -17,6 +17,9 @@ public sealed class RealtimeNotifications : IRealtimeNotifications
             _changes.Add(change);
     }
 
+    /// <summary>What would be announced if the use case ended now.</summary>
+    public IReadOnlyList<RealtimeChange> Pending => _changes.ToList();
+
     /// <summary>Hands the pending notices over and forgets them.</summary>
     internal IReadOnlyList<RealtimeChange> Drain()
     {

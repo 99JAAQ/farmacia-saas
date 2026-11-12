@@ -39,6 +39,11 @@ export function onSessionChange(listener: SessionListener): () => void {
   }
 }
 
+/** For the real-time connection, which cannot use this module's fetch: the token stays in memory all the same. */
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
 export function setSession(session: Session | null): void {
   accessToken = session?.accessToken ?? null
   listeners.forEach((listener) => listener(session))

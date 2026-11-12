@@ -65,7 +65,7 @@ public class CreditHandlersTests
         new RegisterSaleHandler(
                 _sessions, _products, _batches, _sales, _creditAccounts, _documentNumbers, _unitOfWork,
                 new FakeCurrentPharmacy(_pharmacyId), Cashier(_ana), new FakeClock(Now),
-                new SaleReader(_products, _users, _returns, _customers), new FakeRealtimeNotifications())
+                new SaleReader(_products, _users, _returns, _customers))
             .Handle(new RegisterSaleCommand([new RegisterSaleLine(_product.Id, _box.Id, boxes)], payments, false, customerId),
                 CancellationToken.None);
 

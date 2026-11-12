@@ -47,13 +47,11 @@ public class SaleHandlersTests
         _sessions.Add(CashSession.Open(_pharmacyId, _ana, 100_000m, Now.AddHours(-3)));
     }
 
-    private readonly FakeRealtimeNotifications _realtime = new();
-
     private Task<SaleDto> SellAsync(Guid userId, int boxes = 1, decimal cash = 50_000m, Guid? productId = null) =>
         new RegisterSaleHandler(
                 _sessions, _products, _batches, _sales, _creditAccounts, _documentNumbers, _unitOfWork,
                 new FakeCurrentPharmacy(_pharmacyId), new FakeCurrentUser(userId, Roles.Cashier), new FakeClock(Now),
-                new SaleReader(_products, _users, _returns, _customers), _realtime)
+                new SaleReader(_products, _users, _returns, _customers))
             .Handle(new RegisterSaleCommand(
                     [new RegisterSaleLine(productId ?? _product.Id, _box.Id, boxes)],
                     [new RegisterSalePayment(PaymentMethod.Cash, cash)],
@@ -71,8 +69,6 @@ public class SaleHandlersTests
         Assert.Equal(Now, sale.SoldAt);
         Assert.Equal(60, _batch.Quantity);
         Assert.Equal((1, 1), (_unitOfWork.SaveCount, _unitOfWork.CommitCount));
-        // Open screens hear about it: the day's sales and the product's stock (sent after the commit).
-        Assert.Equal([("sales", (Guid?)sale.Id), ("stock", _product.Id)], _realtime.Added);
 
         // The ticket: names and change, no costs.
         Assert.Equal("Ana Cajera", ticket.SoldByName);

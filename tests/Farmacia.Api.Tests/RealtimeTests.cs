@@ -21,12 +21,12 @@ public class RealtimeTests(ApiFactory api)
         var pharmacyId = await api.CreatePharmacyAsync();
         var owner = await api.LoggedInClientAsync(pharmacyId, Roles.Owner);
         var stranger = await api.LoggedInClientAsync(await api.CreatePharmacyAsync(), Roles.Owner);
+        var cashier = await api.LoggedInClientAsync(pharmacyId, Roles.Cashier);
+        var (productId, boxId) = await api.SeedProductWithStockAsync(pharmacyId, tablets: 90);
+        await OpenShiftAsync(cashier); // announced too ("cash"), before the screens listen
         await using var ownerScreen = await Listen(owner);
         await using var strangerScreen = await Listen(stranger);
 
-        var cashier = await api.LoggedInClientAsync(pharmacyId, Roles.Cashier);
-        var (productId, boxId) = await api.SeedProductWithStockAsync(pharmacyId, tablets: 90);
-        await OpenShiftAsync(cashier);
         var sale = await cashier.PostAsJsonAsync("/api/sales", Cart(productId, boxId, boxes: 1));
         Assert.Equal(HttpStatusCode.Created, sale.StatusCode);
         var saleId = (await sale.Content.ReadFromJsonAsync<IdDto>())!.Id;
@@ -42,9 +42,9 @@ public class RealtimeTests(ApiFactory api)
     {
         var pharmacyId = await api.CreatePharmacyAsync();
         var cashier = await api.LoggedInClientAsync(pharmacyId, Roles.Cashier);
-        await using var screen = await Listen(cashier);
         var (productId, boxId) = await api.SeedProductWithStockAsync(pharmacyId, tablets: 30);
         await OpenShiftAsync(cashier);
+        await using var screen = await Listen(cashier);
 
         var tooMany = await cashier.PostAsJsonAsync("/api/sales", Cart(productId, boxId, boxes: 2));
 

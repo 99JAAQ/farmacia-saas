@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react'
+import { useRealtime } from '@/lib/realtime/useRealtime'
 import { usePharmacy } from '@/features/pharmacy/usePharmacy'
 import { Link, NavLink, Outlet } from 'react-router'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,8 @@ export function AppLayout() {
   const { user, logout } = useAuth()
   const sections = sectionsFor(user)
   const pharmacy = usePharmacy()
+  // Live updates for every screen of a pharmacy's user (the hub refuses the platform administrator).
+  useRealtime(user?.pharmacyId != null && !user.mustChangePassword)
   const roles = user?.roles.map((role) => roleLabels[role]).join(', ')
 
   const links = sections.map(({ to, label, icon: Icon }) => (

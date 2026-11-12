@@ -6,6 +6,8 @@ using Farmacia.Infrastructure.Persistence;
 using Farmacia.Infrastructure.Persistence.Repositories;
 using Farmacia.Infrastructure.Persistence.Tenancy;
 using Farmacia.Infrastructure.Platform;
+using Farmacia.Infrastructure.Realtime;
+using Farmacia.Application.Abstractions.Realtime;
 using Farmacia.Infrastructure.Time;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +29,10 @@ public static class DependencyInjection
         services.AddScoped<TenantDatabaseScope>();
         services.AddDbContext<FarmaciaDbContext>((provider, options) => options
             .UseSqlServer(connectionString)
-            .AddInterceptors(new TenantSessionInterceptor(() => provider.GetRequiredService<TenantDatabaseScope>().Session)));
+            .AddInterceptors(
+                new TenantSessionInterceptor(() => provider.GetRequiredService<TenantDatabaseScope>().Session),
+                // Real time: what each SaveChanges wrote becomes a notice, sent after the use case commits.
+                new RealtimeChangesInterceptor(() => provider.GetRequiredService<IRealtimeNotifications>())));
 
         // Scoped, like the DbContext: one unit of work per request.
         services.AddScoped<IUnitOfWork, UnitOfWork>();

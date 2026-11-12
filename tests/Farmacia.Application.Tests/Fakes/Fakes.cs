@@ -373,11 +373,3 @@ public sealed class InMemoryCreditPaymentRepository : ICreditPaymentRepository
 
     public void Add(CreditPayment payment) => Items.Add(payment);
 }
-
-/// <summary>Records the notices a use case asked for (the pipeline that sends them is not part of these tests).</summary>
-public sealed class FakeRealtimeNotifications : Farmacia.Application.Abstractions.Realtime.IRealtimeNotifications
-{
-    public List<(string Topic, Guid? Id)> Added { get; } = [];
-
-    public void Add(string topic, Guid? id = null) => Added.Add((topic, id));
-}

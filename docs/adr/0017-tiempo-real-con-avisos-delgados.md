@@ -1,6 +1,6 @@
 # 0017. Tiempo real con SignalR: avisos delgados por farmacia, enviados después del commit
 
-- **Estado:** Aceptada
+- **Estado:** Aceptada; modificada por [0018](0018-avisos-desde-lo-que-se-guarda.md) (los avisos los anota un interceptor de EF, no cada caso de uso)
 - **Fecha:** 2026-11-12
 
 ## Contexto
