@@ -1,0 +1,140 @@
+# Deploys the demo to Azure after every green CI on main (ADR 0020). Does nothing until Azure is set up
+# (infra/setup-azure.ps1 creates the repository variables). No Azure secret is stored: the login is OIDC.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for Azure
+  packages: write # push the images to GitHub Container Registry
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      vars.AZURE_CLIENT_ID != '' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SHA }}
+
+      - name: Image names
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "APP_IMAGE=ghcr.io/$repo:$SHA" >> "$GITHUB_ENV"
+          echo "MIGRATOR_IMAGE=ghcr.io/$repo-migrator:$SHA" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the images (the same Dockerfile CI tested)
+        run: |
+          label="org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"
+          docker build --target final --label "$label" -t "$APP_IMAGE" .
+          docker build --target migrator --label "$label" -t "$MIGRATOR_IMAGE" .
+          docker push "$APP_IMAGE"
+          docker push "$MIGRATOR_IMAGE"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Infrastructure, first pass (everything but the app)
+        id: infra
+        run: |
+          az deployment group create -g "$RG" -n "infra-$GITHUB_RUN_ID" -f infra/main.bicep \
+            -p deployApp=false containerImage="$APP_IMAGE" \
+               deployerObjectId="${{ vars.DEPLOYER_OBJECT_ID }}" \
+               sqlAdminObjectId="${{ vars.SQL_ADMIN_GROUP_ID }}" sqlAdminLogin="${{ vars.SQL_ADMIN_GROUP_NAME }}" \
+               bootstrapAdminEmail="${{ vars.BOOTSTRAP_ADMIN_EMAIL }}" budgetEmail="${{ vars.BUDGET_EMAIL }}" \
+            --query properties.outputs -o json > outputs.json
+          for key in keyVaultName sqlServerFqdn databaseName appIdentityName appIdentityClientId containerAppName; do
+            echo "$key=$(jq -r ".$key.value" outputs.json)" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Secrets in Key Vault (created once, never printed)
+        env:
+          VAULT: ${{ steps.infra.outputs.keyVaultName }}
+        run: |
+          create_if_missing() {
+            # The role assignment of this deployment can take a minute to apply: retry.
+            for attempt in $(seq 1 12); do
+              if az keyvault secret show --vault-name "$VAULT" --name "$1" --query id -o tsv >/dev/null 2>&1; then return 0; fi
+              if az keyvault secret set --vault-name "$VAULT" --name "$1" --value "$2" --output none 2>/dev/null; then
+                echo "created $1"; return 0
+              fi
+              sleep 10
+            done
+            echo "could not create $1"; return 1
+          }
+          create_if_missing jwt-signing-key "$(openssl rand -base64 32)"
+          # Meets the password rules (8+, upper, lower, digit). Read it with az keyvault secret show; change it at login.
+          create_if_missing bootstrap-admin-password "Inicial-$(openssl rand -hex 6)A9"
+
+      - name: Allow this runner through the SQL firewall
+        run: |
+          echo "RUNNER_IP=$(curl -fsS https://api.ipify.org)" >> "$GITHUB_ENV"
+          echo "SQL_SERVER=$(echo '${{ steps.infra.outputs.sqlServerFqdn }}' | cut -d. -f1)" >> "$GITHUB_ENV"
+      - run: az sql server firewall-rule create -g "$RG" -s "$SQL_SERVER" -n "github-$GITHUB_RUN_ID" --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP" --output none
+
+      - name: Migrations (as the Microsoft Entra admin; the app itself has no DDL rights)
+        env:
+          # The bundle builds the app's host; the real connection string is the --connection one.
+          ConnectionStrings__Farmacia: placeholder
+        run: |
+          id=$(docker create "$MIGRATOR_IMAGE")
+          docker cp "$id:/efbundle" ./efbundle && docker rm "$id" > /dev/null
+          chmod +x ./efbundle
+          ./efbundle --connection "Server=tcp:${{ steps.infra.outputs.sqlServerFqdn }},1433;Database=${{ steps.infra.outputs.databaseName }};Authentication=Active Directory Default;Encrypt=True;Connect Timeout=120"
+
+      - name: The app's database user (read and write only)
+        run: |
+          curl -fsSL https://github.com/microsoft/go-sqlcmd/releases/latest/download/sqlcmd-linux-amd64.tar.bz2 | tar -xj sqlcmd
+          ./sqlcmd -S "${{ steps.infra.outputs.sqlServerFqdn }}" -d "${{ steps.infra.outputs.databaseName }}" \
+            --authentication-method ActiveDirectoryDefault -b -i infra/sql/grant-app-user.sql \
+            -v AppIdentityName="${{ steps.infra.outputs.appIdentityName }}" AppIdentityClientId="${{ steps.infra.outputs.appIdentityClientId }}"
+
+      - name: Close the SQL firewall again
+        if: always() && env.SQL_SERVER != ''
+        run: az sql server firewall-rule delete -g "$RG" -s "$SQL_SERVER" -n "github-$GITHUB_RUN_ID" --output none || true
+
+      - name: Infrastructure, second pass (the app, on the new image)
+        id: app
+        run: |
+          url=$(az deployment group create -g "$RG" -n "app-$GITHUB_RUN_ID" -f infra/main.bicep \
+            -p deployApp=true containerImage="$APP_IMAGE" \
+               deployerObjectId="${{ vars.DEPLOYER_OBJECT_ID }}" \
+               sqlAdminObjectId="${{ vars.SQL_ADMIN_GROUP_ID }}" sqlAdminLogin="${{ vars.SQL_ADMIN_GROUP_NAME }}" \
+               bootstrapAdminEmail="${{ vars.BOOTSTRAP_ADMIN_EMAIL }}" budgetEmail="${{ vars.BUDGET_EMAIL }}" \
+            --query properties.outputs.appUrl.value -o tsv)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test (a cold start and a paused database can take a while)
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS "${{ steps.app.outputs.url }}/health" && curl -fsS -o /dev/null "${{ steps.app.outputs.url }}/login"; then
+              echo; echo "Desplegado: ${{ steps.app.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"; exit 0
+            fi
+            sleep 10
+          done
+          exit 1

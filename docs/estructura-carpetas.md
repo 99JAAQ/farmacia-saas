@@ -8,8 +8,12 @@ Farmacias_Saas/
 ├── Directory.Build.props    → configuración común: net10.0, nullable, warnings como errores
 ├── global.json              → fija la versión del SDK de .NET
 ├── dotnet-tools.json        → herramientas locales (dotnet-ef); se instalan con `dotnet tool restore`
-├── docker-compose.yml       → SQL Server de desarrollo (puerto 14330)
-├── .env.example             → plantilla de la contraseña de SQL Server (.env está ignorado)
+├── docker-compose.yml       → SQL Server de desarrollo (puerto 14330); con --profile app, el sistema completo en :8080
+├── Dockerfile               → la imagen de producción (API + React) y la de migraciones (target migrator)
+├── .env.example             → plantilla de los secretos locales (.env está ignorado)
+├── .github/                 → CI (ci.yml), despliegue a Azure (deploy.yml) y Dependabot
+├── infra/                   → Bicep de Azure, script de configuración inicial y el SQL del usuario de la app
+├── e2e/                     → tests end to end con Playwright contra la app en Docker
 ├── .gitattributes           → finales de línea LF en todo el repo
 ├── CLAUDE.md                → contexto y decisiones para el asistente de IA
 ├── docs/                    → esta documentación

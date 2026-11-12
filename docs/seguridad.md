@@ -121,16 +121,18 @@ flowchart LR
 
 Los tests de la API usan dos farmacias (A y B) para comprobar este aislamiento por HTTP. `RowLevelSecurityTests` lo comprueba en la base con SQL sin `WHERE`, escrituras cruzadas, inyección contra el contexto, reutilización del pool y cobertura de toda tabla con `PharmacyId`.
 
-**Quién salta RLS:** solo `TenantDatabaseScope.BypassIsolation()`, que usan el seeder de desarrollo, la preparación de los tests y `PlatformPharmacies` (el alta y la lista de farmacias del administrador, en un scope de servicios propio). `SecurityConventionTests` falla si un controller o un caso de uso lo recibe. **Fuera de RLS:** las tablas de Identity, porque el login no conoce la farmacia antes de encontrar al usuario. **Límite:** RLS protege contra errores del código y contra inyección, no contra quien tenga las credenciales de la base. Para eso están Key Vault y un usuario de base de datos sin privilegios (fase 5; hoy la API usa `sa`).
+**Quién salta RLS:** solo `TenantDatabaseScope.BypassIsolation()`, que usan el seeder de desarrollo, la preparación de los tests y `PlatformPharmacies` (el alta y la lista de farmacias del administrador, en un scope de servicios propio). `SecurityConventionTests` falla si un controller o un caso de uso lo recibe. **Fuera de RLS:** las tablas de Identity, porque el login no conoce la farmacia antes de encontrar al usuario. **Límite:** RLS protege contra errores del código y contra inyección, no contra quien tenga las credenciales de la base. En Azure, la app se conecta con un usuario que solo puede leer y escribir (`db_datareader` y `db_datawriter`, sin DDL ni `ALTER ANY SECURITY POLICY`): ni con sus credenciales se puede apagar la política. En desarrollo local se usa `sa`.
 
 ## Secretos
 
-| Secreto | Dónde vive en desarrollo | En producción (fase 5) |
+| Secreto | Dónde vive en desarrollo | En producción (Azure, [ADR 0020](adr/0020-despliegue-en-azure-planes-gratuitos.md)) |
 |---|---|---|
-| Contraseña de SQL Server | `.env` (ignorado por git; la plantilla es `.env.example`) | Azure Key Vault |
-| Cadena de conexión | user-secrets del proyecto Api (`ConnectionStrings:Farmacia`) | Key Vault |
-| Clave de firma JWT | user-secrets (`Jwt:SigningKey`) | Key Vault |
-| Clave de licencia de MediatR | user-secrets (`MediatR:LicenseKey`) | Key Vault |
+| Contraseña de SQL Server | `.env` (ignorado por git; la plantilla es `.env.example`) | **No existe:** el servidor solo acepta Microsoft Entra ID |
+| Cadena de conexión | user-secrets del proyecto Api (`ConnectionStrings:Farmacia`) | Sin secreto: `Authentication=Active Directory Managed Identity` (la identidad administrada de la app) |
+| Clave de firma JWT | user-secrets (`Jwt:SigningKey`) | Key Vault, generada por el pipeline la primera vez; la app la lee con su identidad |
+| Contraseña inicial del administrador de la plataforma | `.env` (`BOOTSTRAP_ADMIN_PASSWORD`, solo para Docker local) | Key Vault, generada por el pipeline; se cambia al primer ingreso |
+| Clave de licencia de MediatR | user-secrets (`MediatR:LicenseKey`) | Opcional (sin ella MediatR solo registra un aviso) |
+| Credenciales de Azure para GitHub Actions | — | **No existen:** OIDC con credencial federada para la rama `main` |
 
 **Ningún secreto va en el repositorio** ni en `appsettings*.json`. Las contraseñas de los usuarios de desarrollo están en `appsettings.Development.json` porque esos usuarios solo existen en la base local.
 
