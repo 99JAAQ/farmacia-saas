@@ -6,6 +6,8 @@ Management software for pharmacies in Colombia: point of sale, shift-based cash 
 
 > The full documentation is in Spanish, in [`docs/`](docs/README.md). This page is a short summary.
 
+**Live demo:** https://ca-farmacia.politemoss-136a2eb5.centralus.azurecontainerapps.io. It runs on Azure's free tiers, so the first visit after a while takes a few seconds to wake up.
+
 ## Features
 
 - **Point of sale:**
@@ -69,7 +71,7 @@ Clean Architecture, with dependencies pointing inwards: `Api → Infrastructure 
 | Auth | ASP.NET Core Identity, JWT |
 | Frontend | React 19, TypeScript, Vite, TanStack Query, Tailwind with shadcn/ui |
 | Tests | xUnit with Testcontainers, Vitest, Playwright |
-| Infrastructure | Docker, GitHub Actions, Azure (in progress) |
+| Infrastructure | Docker, GitHub Actions, Azure Container Apps, Azure SQL, Key Vault (Bicep, OIDC, managed identity) |
 
 ## Try it
 

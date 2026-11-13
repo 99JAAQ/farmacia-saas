@@ -77,15 +77,17 @@ jobs:
           VAULT: ${{ steps.infra.outputs.keyVaultName }}
         run: |
           create_if_missing() {
-            # The role assignment of this deployment can take a minute to apply: retry.
-            for attempt in $(seq 1 12); do
+            # A role assigned by this same deployment (Secrets Officer) can take several minutes to apply: retry for
+            # about 6 minutes. The error is shown, the value never (it is not in the error).
+            local error=""
+            for attempt in $(seq 1 36); do
               if az keyvault secret show --vault-name "$VAULT" --name "$1" --query id -o tsv >/dev/null 2>&1; then return 0; fi
-              if az keyvault secret set --vault-name "$VAULT" --name "$1" --value "$2" --output none 2>/dev/null; then
+              if error=$(az keyvault secret set --vault-name "$VAULT" --name "$1" --value "$2" --output none 2>&1); then
                 echo "created $1"; return 0
               fi
               sleep 10
             done
-            echo "could not create $1"; return 1
+            echo "could not create $1: $error"; return 1
           }
           create_if_missing jwt-signing-key "$(openssl rand -base64 32)"
           # Meets the password rules (8+, upper, lower, digit). Read it with az keyvault secret show; change it at login.

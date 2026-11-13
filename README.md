@@ -6,6 +6,8 @@ Software de gestión para farmacias en Colombia: punto de venta, caja por turnos
 
 > English summary: [README.en.md](README.en.md)
 
+**Demo:** https://ca-farmacia.politemoss-136a2eb5.centralus.azurecontainerapps.io. Corre en planes gratuitos de Azure, así que la primera visita después de un rato sin uso tarda unos segundos en arrancar.
+
 ## Qué hace
 
 - **Punto de venta**: compatible con lector de código de barras, venta fraccionada (caja, blíster, tableta), pago mixto (efectivo, tarjeta, Nequi/Daviplata, transferencia, fiado) y tiquete para impresora térmica de 80 mm. Sale primero lo que vence primero (FEFO).
@@ -40,7 +42,7 @@ Todas las decisiones están en [`docs/adr/`](docs/adr/README.md).
 | Auth | ASP.NET Core Identity + JWT propio + refresh token en cookie HttpOnly |
 | Frontend | React 19, TypeScript, Vite, TanStack Query, React Router, Tailwind + shadcn/ui |
 | Tests | xUnit + Testcontainers (SQL Server real), Vitest, Playwright (end to end) |
-| Infra | Docker (imagen chiseled sin shell), GitHub Actions, Azure (en preparación) |
+| Infra | Docker (imagen chiseled sin shell), GitHub Actions, Azure Container Apps + Azure SQL + Key Vault (Bicep, OIDC, identidad administrada) |
 
 ## Probarlo en un minuto (Docker)
 

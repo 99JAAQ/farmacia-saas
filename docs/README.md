@@ -24,7 +24,7 @@ Esta carpeta explica cómo está construida la aplicación y por qué. Está esc
 | 2. Núcleo | Compras, inventario por lotes, caja, POS, devoluciones, fiado, cuentas por pagar | Completa |
 | 3. Multi-tenant | Varias farmacias, Row-Level Security, administrador de la plataforma, usuarios | Completa |
 | 4. Tiempo real | SignalR: pantallas en vivo, panel del día, alertas de stock y vencimientos | Completa |
-| 5. Calidad e infra | Docker, CI/CD con GitHub Actions, tests end to end, despliegue en Azure | En curso: Docker, CI y la infraestructura listos; falta el primer despliegue |
+| 5. Calidad e infra | Docker, CI/CD con GitHub Actions, tests end to end, despliegue en Azure | Completa: la demo está publicada |
 | 6. Offline-first | El POS vende sin internet y sincroniza después | Pendiente |
 | 7. Presentación | Demo desplegada, diagramas, video | Pendiente |
 
