@@ -71,7 +71,7 @@ El presupuesto de USD 5 al mes avisa por correo antes de que cueste algo. Para q
   az rest --method get --url "https://management.azure.com/subscriptions/<id>/providers/Microsoft.Sql/locations/<región>/capabilities?api-version=2021-11-01" --query "{estado:status, razon:reason}"
   ```
 
-  `Available` significa que acepta servidores nuevos. Cambie la variable `AZURE_LOCATION` del repositorio. Si ya se crearon recursos en otra región, bórrelos primero y purgue el Key Vault, porque su nombre queda reservado 7 días.
+  `Available` significa que acepta servidores nuevos. Cambie la variable `AZURE_LOCATION` del repositorio. Los nombres incluyen la región (en su sufijo), así que en la región nueva todo se crea con nombres nuevos. Borre después los recursos que quedaron en la región anterior.
 - **"The subscription is not registered to use namespace …":** el registro de proveedores tarda unos minutos después del script. Vuelva a ejecutar el workflow.
 - **La app no arranca y los logs dicen `Login failed for user '<token-identified principal>'`:** falta el usuario de la app en la base. El paso "The app's database user" del workflow debe haber terminado bien.
 - **El primer request tarda casi un minuto:** la base de la oferta gratuita estaba pausada y se está reanudando. Es normal en la demo.

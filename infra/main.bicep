@@ -41,7 +41,9 @@ param monthlyBudgetUsd int = 5
 @description('First day of the current month (yyyy-MM-01): budgets cannot start in the past.')
 param budgetStartDate string = '${utcNow('yyyy-MM')}-01'
 
-var suffix = uniqueString(resourceGroup().id)
+// The region is part of the suffix: a name stays tied to the region it was first created in (even by a failed
+// attempt), so moving to another region must give new names.
+var suffix = uniqueString(resourceGroup().id, location)
 var tags = { app: appName, environment: 'demo' }
 
 // --- Identity: what the app is to Key Vault and to SQL (no passwords anywhere) ---------------------------------------
